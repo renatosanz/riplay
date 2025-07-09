@@ -1,0 +1,87 @@
+using Gtk 4.0;
+
+Window player{
+  title:"riplay";
+  resizable:false;
+
+  [titlebar]
+  HeaderBar {
+    [end]
+    MenuButton about_btn{
+      tooltip-text:"about";
+      popover:PopoverMenu{
+        menu-model:menu{
+          section {
+            item {
+              label: 'New Window';
+              translatable:'yes';
+              action:'app.new';
+            }
+          }
+        };
+      };
+    }  
+  }
+
+  Box {
+    margin-top:12;
+    margin-bottom:12;
+    margin-start:12;
+    margin-end:12;
+    spacing:12;
+
+    orientation: vertical;
+
+    Box{
+      spacing:12;
+      Label audio_label{
+        label:"No Song!";
+        css-classes:["title-3"];
+        hexpand:true;
+      }
+    }
+
+    Box {
+      orientation: vertical;
+      spacing:12;
+      hexpand:true;
+      
+      DrawingArea spectrum{
+        vexpand:true; 
+        hexpand:true; 
+      }
+      
+      Box init_options_box{
+        orientation: horizontal;
+        spacing:12;                 
+
+        Box{
+          vexpand:false;
+          Button open_file_btn{
+            label:"Open a file";
+          }
+        }
+
+        Box{
+          orientation: vertical;
+          spacing:12;                 
+          Label {
+            label:"Recent Files";
+          }
+
+          ScrolledWindow{
+            Box recent_files_box{
+              orientation: vertical;
+              hexpand:true;
+              vexpand:true;
+            }
+          }
+        }
+      }
+
+      MediaControls audio_controls{
+        hexpand:true; 
+      }
+    }
+  }
+}
