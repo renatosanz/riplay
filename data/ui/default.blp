@@ -1,0 +1,94 @@
+using Gtk 4.0;
+
+Window default_window{
+  title:"riplay";
+  resizable:false;
+  default-width:532;
+  default-height:400;
+
+  [titlebar]
+  HeaderBar {
+    [start]
+    MenuButton file_options{
+      tooltip-text:"file options";
+      popover:PopoverMenu{
+        menu-model:menu{
+          section {
+            item ("Open New File","app.open-new-file")
+            item ("Open Recent File", "app.open-recents")
+            item ("Change Visuals", "app.change-visuals")
+          }
+          section{
+            item ("Keyboard Shortcuts")
+          }
+          section{
+            item ("Credits")
+          }
+        };
+      };
+    }
+  }
+
+  Box {
+    margin-top:12;
+    margin-bottom:12;
+    margin-start:12;
+    margin-end:12;
+    spacing:12;
+
+    orientation: vertical;
+
+    Box {
+      orientation: vertical;
+      spacing:12;
+      hexpand:true;
+      
+      Box default_view{
+        orientation: vertical;
+        spacing:12;                 
+        hexpand:true;
+        vexpand:true;
+
+
+        Box{
+          orientation: vertical;
+          spacing:12;                 
+          Label riplay_label{
+            label:"riplay";
+            css-classes:["title-1"];
+            hexpand:true;
+          }        
+
+          Label description_label{
+            label:"A simple music player & visuals";
+            hexpand:true;
+          }
+ 
+          Box{
+            spacing:12;                 
+
+            Button open_file_btn{
+              label:"Open new file";
+              action-name:"app.open-new-file";
+            }
+            Button open_recent_btn{
+              label:"Open recent file";
+              action-name:"app.open-recents";
+            }
+          }
+         
+          DrawingArea spectrum_default{
+            content-height:50;
+            content-width:50;
+            vexpand:true; 
+            hexpand:true; 
+          }
+        }
+      }
+
+      MediaControls audio_controls{
+        hexpand:true; 
+      }
+    }
+  }
+}

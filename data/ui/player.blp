@@ -1,6 +1,6 @@
 using Gtk 4.0;
 
-Window player{
+Window player_window{
   title:"riplay";
   resizable:false;
   default-width:532;
@@ -14,8 +14,9 @@ Window player{
       popover:PopoverMenu{
         menu-model:menu{
           section {
-            item ("Open New File")
+            item ("Open New File","app.open-new-file")
             item ("Open Recent File", "app.open-recents")
+            item ("Change Visuals", "app.change-visuals")
           }
           section{
             item ("Keyboard Shortcuts")
@@ -60,54 +61,12 @@ Window player{
           css-classes:["dim-label"];
           hexpand:true;
         }
+
         DrawingArea spectrum_viewer{
           vexpand:true; 
           hexpand:true; 
           content-height:50;
           content-width:50;
-        }
-      }
-      
-      
-      
-      Box default_view{
-        orientation: vertical;
-        spacing:12;                 
-        hexpand:true;
-        vexpand:true;
-
-
-        Box{
-          orientation: vertical;
-          spacing:12;                 
-          Label riplay_label{
-            label:"riplay";
-            css-classes:["title-1"];
-            hexpand:true;
-          }        
-
-          Label description_label{
-            label:"A simple music player";
-            hexpand:true;
-          }
- 
-          Box{
-            spacing:12;                 
-
-            Button open_file_btn{
-              label:"Open new file";
-            }
-            Button open_recent_btn{
-              label:"Open recent file";
-            }
-          }
-         
-          DrawingArea spectrum_default{
-            content-height:50;
-            content-width:50;
-            vexpand:true; 
-            hexpand:true; 
-          }
         }
       }
 

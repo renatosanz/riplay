@@ -5,21 +5,73 @@
 #include "gtk/gtk.h"
 #include "gtk/gtkshortcut.h"
 #include "pango/pango-layout.h"
+#include "riplay.h"
 #include "types.h"
 #include <math.h>
+#include <stdlib.h>
 #include <taglib/tag_c.h>
 
 #define MIN_IN_SECS 60
 
+static guint timeout_id = 0;
 static int position = 0;
 
-static GtkBuilder *loadBuilder(const char *path);
-static void recents_action_wrapper(GSimpleAction *action, GVariant *parameter,
-                                   GApplication *app);
-static void open_recent_files(GApplication *app);
-static void recents_btn_wrapper(GtkButton *btn, GApplication *app);
-
+static void open_recent_files(GSimpleAction *action, GVariant *parameter,
+                              GApplication *app);
 static gboolean on_timeout(gpointer user_data);
+void load_actions(GApplication *app);
+static void open_visuals_menu(GSimpleAction *action, GVariant *parameter,
+                              GApplication *app);
+static void open_new_file_dialog(GSimpleAction *action, GVariant *parameter,
+                                 GApplication *app);
+
+void file_dialog_response(GObject *source_object, GAsyncResult *result,
+                          gpointer user_data) {
+  GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
+  GFile *file = NULL;
+  GError *error = NULL;
+
+  // Obtener el archivo seleccionado
+  file = gtk_file_dialog_open_finish(dialog, result, &error);
+
+  if (error != NULL) {
+    // Hubo un error
+    g_printerr("Error seleccionando archivo: %s\n", error->message);
+    g_error_free(error);
+    return;
+  }
+
+  if (file != NULL) {
+    // Obtener la ruta del archivo como string
+    char *filepath = g_file_get_path(file);
+
+    if (filepath != NULL) {
+      // Imprimir la ruta del archivo
+      g_print("Archivo seleccionado: %s\n", filepath);
+
+      if (timeout_id > 0) {
+        g_source_remove(timeout_id);
+        timeout_id = 0;
+      }
+
+      clean_new_on_playing(filepath);
+
+      // Liberar memoria
+      g_free(filepath);
+    }
+
+    // Liberar el objeto GFile
+    g_object_unref(file);
+  } else {
+    g_print("No se seleccionó ningún archivo\n");
+  }
+}
+
+static GtkBuilder *loadBuilder(const char *path) {
+  GtkBuilder *builder = gtk_builder_new();
+  gtk_builder_add_from_resource(builder, path, NULL);
+  return builder;
+}
 
 static void draw_stand_by_function(GtkDrawingArea *area, cairo_t *cr, int width,
                                    int height, gpointer data) {
@@ -47,20 +99,17 @@ static void draw_stand_by_function(GtkDrawingArea *area, cairo_t *cr, int width,
   cairo_fill(cr);
 }
 
-int *open_single_window(GApplication *app, const char *filename,
-                        GtkWidget **spectrum, GtkWindow **win,
-                        GtkWidget **player, FileMetaData *metadata) {
-  // load actions
-  GSimpleAction *test_action_obj = g_simple_action_new("open-recents", NULL);
-  g_signal_connect(test_action_obj, "activate",
-                   G_CALLBACK(recents_action_wrapper), app);
-  GActionMap *action_map = G_ACTION_MAP(app);
-  g_action_map_add_action(action_map, G_ACTION(test_action_obj));
+int load_player_window(GApplication *app, const char *filename,
+                       GtkWidget **spectrum, GtkWindow **win,
+                       GtkWidget **player, GtkMediaStream **stream,
+                       FileMetaData *metadata) {
+  load_actions(app);
 
   GtkBuilder *b = loadBuilder("/org/riplay/data/ui/player.ui");
-  *win = GTK_WINDOW(gtk_builder_get_object(b, "player"));
+  *win = GTK_WINDOW(gtk_builder_get_object(b, "player_window"));
 
   if (metadata && filename) {
+    *stream = gtk_media_file_new_for_filename(filename);
     // labels
     const char *artis_label_format =
         "%s - %s"; // format for artist - album label
@@ -75,6 +124,7 @@ int *open_single_window(GApplication *app, const char *filename,
     propieties_label = GTK_WIDGET(gtk_builder_get_object(b, "year_label"));
     artis_album_label =
         GTK_WIDGET(gtk_builder_get_object(b, "artis_album_label"));
+    *player = GTK_WIDGET(gtk_builder_get_object(b, "audio_controls"));
 
     // set strings to labels
     gtk_label_set_ellipsize(GTK_LABEL(title_label), PANGO_ELLIPSIZE_END);
@@ -93,34 +143,41 @@ int *open_single_window(GApplication *app, const char *filename,
         GTK_LABEL(artis_album_label),
         g_strdup_printf(artis_label_format, metadata->artist, metadata->album));
 
+    gtk_media_controls_set_media_stream(GTK_MEDIA_CONTROLS(*player), *stream);
     // init visualizer
     *spectrum = GTK_WIDGET(gtk_builder_get_object(b, "spectrum_viewer"));
     // gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(spectrum),
     // draw_stand_by_function,
     //                                NULL, NULL);
-    // hide dafault section
-    gtk_widget_set_visible(
-        GTK_WIDGET(gtk_builder_get_object(b, "default_view")), FALSE);
 
     // g_timeout_add(32, on_timeout, spectrum); // draw spectrum_viewer
+    g_object_unref(b);
+
+    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(*win));
+    gtk_window_present(GTK_WINDOW(*win));
+    return 0;
   } else {
-    // hide player zone
-    gtk_widget_set_visible(
-        GTK_WIDGET(gtk_builder_get_object(b, "playing_view")), FALSE);
-    // buttons
-    GtkWidget *open_recent_btn; // label for song year
-    open_recent_btn = GTK_WIDGET(gtk_builder_get_object(b, "open_recent_btn"));
-
-    // init signals  for buttons
-    g_signal_connect(GTK_BUTTON(open_recent_btn), "clicked",
-                     G_CALLBACK(recents_btn_wrapper), app);
-
-    *spectrum = GTK_WIDGET(gtk_builder_get_object(b, "spectrum_default"));
-    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(*spectrum),
-                                   draw_stand_by_function, NULL, NULL);
-
-    g_timeout_add(32, on_timeout, *spectrum); // draw stand_by animation
+    g_printerr("error loading player!");
+    return EXIT_FAILURE;
   }
+}
+
+int load_default_window(GApplication *app, const char *filename,
+                        GtkWidget **spectrum, GtkWindow **win,
+                        GtkWidget **player, FileMetaData *metadata) {
+
+  load_actions(app);
+
+  GtkBuilder *b = loadBuilder("/org/riplay/data/ui/default.ui");
+  *win = GTK_WINDOW(gtk_builder_get_object(b, "default_window"));
+
+  *spectrum = GTK_WIDGET(gtk_builder_get_object(b, "spectrum_default"));
+  gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(*spectrum),
+                                 draw_stand_by_function, NULL, NULL);
+
+  timeout_id =
+      g_timeout_add(32, on_timeout, *spectrum); // draw stand_by animation
+
   g_object_unref(b);
 
   gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(*win));
@@ -130,19 +187,30 @@ int *open_single_window(GApplication *app, const char *filename,
 
 void openMultiWindow(void) {}
 
-static void recents_action_wrapper(GSimpleAction *action, GVariant *parameter,
-                                   GApplication *app) {
-  (void)action;
-  (void)parameter;
-  open_recent_files(app);
+void load_actions(GApplication *app) {
+  // load actions
+  GSimpleAction *recents_action_obj = g_simple_action_new("open-recents", NULL);
+  GSimpleAction *visuals_action_obj =
+      g_simple_action_new("change-visuals", NULL);
+  GSimpleAction *open_new_file_action_obj =
+      g_simple_action_new("open-new-file", NULL);
+
+  g_signal_connect(recents_action_obj, "activate",
+                   G_CALLBACK(open_recent_files), app);
+  g_signal_connect(visuals_action_obj, "activate",
+                   G_CALLBACK(open_visuals_menu), app);
+  g_signal_connect(open_new_file_action_obj, "activate",
+                   G_CALLBACK(open_new_file_dialog), app);
+
+  GActionMap *action_map = G_ACTION_MAP(app);
+  g_action_map_add_action(action_map, G_ACTION(recents_action_obj));
+  g_action_map_add_action(action_map, G_ACTION(visuals_action_obj));
+  g_action_map_add_action(action_map, G_ACTION(open_new_file_action_obj));
 }
 
-static void recents_btn_wrapper(GtkButton *btn, GApplication *app) {
-  (void)btn;
-  open_recent_files(app);
-}
+static void open_recent_files(GSimpleAction *action, GVariant *parameter,
+                              GApplication *app) {
 
-static void open_recent_files(GApplication *app) {
   GtkBuilder *b = loadBuilder("/org/riplay/data/ui/recents.ui");
   GtkWindow *recent_win = GTK_WINDOW(gtk_builder_get_object(b, "recents"));
 
@@ -165,10 +233,28 @@ static void open_recent_files(GApplication *app) {
   gtk_window_present(GTK_WINDOW(recent_win));
 }
 
-GtkBuilder *loadBuilder(const char *path) {
-  GtkBuilder *builder = gtk_builder_new();
-  gtk_builder_add_from_resource(builder, path, NULL);
-  return builder;
+static void open_visuals_menu(GSimpleAction *action, GVariant *parameter,
+                              GApplication *app) {
+  GtkBuilder *b = loadBuilder("/org/riplay/data/ui/visuals_menu.ui");
+  GtkWindow *visuals_win =
+      GTK_WINDOW(gtk_builder_get_object(b, "visuals_menu"));
+
+  gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(visuals_win));
+  gtk_window_present(GTK_WINDOW(visuals_win));
+}
+
+static void open_new_file_dialog(GSimpleAction *action, GVariant *parameter,
+                                 GApplication *app) {
+  GtkWindow *window = GTK_WINDOW(app);
+  GtkFileDialog *dialog;
+  dialog = GTK_FILE_DIALOG(gtk_file_dialog_new());
+  gtk_file_dialog_set_title(dialog, "Seleccionar archivo");
+
+  GtkFileFilter *filter = gtk_file_filter_new();
+  gtk_file_filter_add_mime_type(filter, "audio/*");
+  gtk_file_dialog_set_default_filter(dialog, filter);
+
+  gtk_file_dialog_open(dialog, window, NULL, file_dialog_response, NULL);
 }
 
 static gboolean on_timeout(gpointer user_data) {

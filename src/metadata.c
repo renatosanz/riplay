@@ -18,7 +18,7 @@ FileMetaData *get_metadata(const char *filename) {
   TagLib_Tag *tag = taglib_file_tag(file);
 
   if (tag) {
-    metadata = malloc(sizeof(FileMetaData));
+    metadata = g_new0(FileMetaData, 1);
     if (!metadata)
       return NULL;
     strcpy(metadata->title,
@@ -35,7 +35,7 @@ FileMetaData *get_metadata(const char *filename) {
 
   TagLib_AudioProperties *props = taglib_file_audioproperties(file);
   if (props) {
-    metadata->propieties = malloc(sizeof(AudioProps));
+    metadata->propieties = g_new0(AudioProps, 1);
     if (!metadata->propieties)
       return NULL;
     metadata->propieties->length = taglib_audioproperties_length(props);

@@ -1,0 +1,43 @@
+using Gtk 4.0;
+
+Window visuals_menu{
+  title:"Visuals Menu";
+  resizable:false;
+  modal:true;
+  default-width:500;
+  default-height:300;
+  Box {
+    margin-top:12;
+    margin-bottom:12;
+    margin-start:12;
+    margin-end:12;
+    spacing:12;
+
+    orientation: vertical;
+    Label {
+      label:"Visuals";
+    }
+
+    ScrolledWindow{
+      Box recent_files_box{
+        orientation: vertical;
+        spacing:2;
+        hexpand:true;
+        vexpand:true;
+      }
+    }
+    Box{
+      hexpand:true;
+      orientation:horizontal;
+      Button{
+        label:"Cancel";
+      }
+      Box{
+        hexpand:true;
+      } 
+      Button{
+        label:"Apply";
+      }
+    }
+  }
+}

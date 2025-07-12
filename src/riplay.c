@@ -1,4 +1,6 @@
+#include "gio/gio.h"
 #include "glib.h"
+#include "types.h"
 #include <SDL2/SDL.h>
 #include <gtk/gtk.h>
 #include <gtk_utils.h>
@@ -7,38 +9,80 @@
 #include <riplay.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-GtkApplication *app;
-GtkWindow *win;
-GtkWidget *spectrum;
-GtkWidget *player;
+AppData *app_data;
+
+GtkApplication *app_global;
 
 #define PROJECT_NAME "riplay"
-char *filename = NULL;
-FileMetaData *metadata = NULL;
+
+void free_global_resources();
 
 // default window (no playing song) for open a recent or new file
 static int on_activate(GApplication *app, char *hint) {
   (void)hint;
-  if (open_single_window(app, filename, &spectrum, &win, &player, metadata)) {
+
+  if (load_default_window(app, app_data->filename, &app_data->drawing_area,
+                          &app_data->win, &app_data->media_controls,
+                          app_data->metadata)) {
     printf("Error oppening window\n");
     return EXIT_FAILURE;
   }
   return 0;
+}
+
+int clean_new_on_playing(const char *filename) {
+  if (!filename || !app_global) {
+    g_critical("Parámetros inválidos");
+    return EXIT_FAILURE;
+  }
+
+  gtk_window_destroy(GTK_WINDOW(app_data->win));
+  g_object_unref(app_data->win);
+
+  free_global_resources();
+
+  app_data = g_new0(AppData, 1);
+  app_data->filename = g_strdup(filename);
+
+  if (!app_data->filename) {
+    g_critical("Fallo al asignar memoria para filename");
+    free_global_resources();
+    return EXIT_FAILURE;
+  }
+
+  app_data->metadata = get_metadata(app_data->filename);
+  if (!app_data->metadata) {
+    g_critical("Error obteniendo metadatos para: %s", filename);
+    free_global_resources();
+    return EXIT_FAILURE;
+  }
+
+  if (load_player_window(G_APPLICATION(app_global), app_data->filename,
+                         &app_data->drawing_area, &app_data->win,
+                         &app_data->media_controls, &app_data->media_stream,
+                         app_data->metadata)) {
+    g_critical("Error cargando ventana de reproducción");
+    free_global_resources();
+    return EXIT_FAILURE;
+  }
+
+  return EXIT_SUCCESS;
 }
 
 // open playing a song
 static int on_playing(GApplication *app, char *hint) {
   (void)hint;
 
-  metadata = get_metadata(filename);
-  if (!metadata) {
+  app_data->metadata = get_metadata(app_data->filename);
+  if (!app_data->metadata) {
     printf("Error getting metadata\n");
     return EXIT_FAILURE;
   }
 
-  if (open_single_window(app, filename, &spectrum, &win, &player, metadata)) {
+  if (load_player_window(app, app_data->filename, &app_data->drawing_area,
+                         &app_data->win, &app_data->media_controls,
+                         &app_data->media_stream, app_data->metadata)) {
     printf("Error oppening window\n");
     return EXIT_FAILURE;
   }
@@ -46,16 +90,38 @@ static int on_playing(GApplication *app, char *hint) {
   return 0;
 }
 
+void free_global_resources() {
+
+  if (app_data->media_stream && G_IS_OBJECT(app_data->media_stream)) {
+    g_object_unref(app_data->media_stream);
+    app_data->media_stream = NULL;
+  }
+
+  if (!app_data)
+    return;
+
+  if (app_data->metadata) {
+    if (app_data->metadata->propieties) {
+      g_free(app_data->metadata->propieties);
+      app_data->metadata->propieties = NULL;
+    }
+
+    g_free(app_data->metadata);
+    app_data->metadata = NULL;
+  }
+
+  if (app_data->filename) {
+    g_free(app_data->filename);
+    app_data->filename = NULL;
+  }
+
+  g_free(app_data);
+  app_data = NULL;
+}
+
 // app shutdown (free global resources)
 static void on_shutdown() {
-  if (metadata) {
-    if (metadata->propieties) {
-      free(metadata->propieties);
-      metadata->propieties = NULL;
-    }
-    free(metadata);
-    metadata = NULL;
-  }
+  free_global_resources();
   g_print("shutdown app\n");
 }
 
@@ -77,184 +143,22 @@ static int on_open_file(GApplication *app, GFile **files, int n_files,
 int main(int argc, char **argv) {
   gtk_init();
 
+  app_data = g_new0(AppData, 1);
+  app_data->metadata = NULL;
+
   if (argc == 2) {
-    filename = argv[1];
-    g_print("%s", filename);
+    app_data->filename = g_strdup(argv[1]);
+    g_print("%s", app_data->filename);
   }
 
-  app = gtk_application_new("org.riprtx.riplay", G_APPLICATION_HANDLES_OPEN);
+  app_global =
+      gtk_application_new("org.riprtx.riplay", G_APPLICATION_HANDLES_OPEN);
   gtk_window_set_default_icon_name(PROJECT_NAME);
-  g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
-  g_signal_connect(app, "open", G_CALLBACK(on_open_file), NULL);
-  g_signal_connect(app, "shutdown", G_CALLBACK(on_shutdown), NULL);
-  int status = g_application_run(G_APPLICATION(app), argc, argv);
-  g_object_unref(app);
+  g_signal_connect(app_global, "activate", G_CALLBACK(on_activate), NULL);
+  g_signal_connect(app_global, "open", G_CALLBACK(on_open_file), NULL);
+  g_signal_connect(app_global, "shutdown", G_CALLBACK(on_shutdown), NULL);
+  int status = g_application_run(G_APPLICATION(app_global), argc, argv);
+  g_object_unref(app_global);
 
   return status;
-}
-
-int decodeMP3(const char *filename) {
-  mpg123_init();
-
-  mpg123_handle *mh = mpg123_new(NULL, NULL);
-  if (mh == NULL) {
-    fprintf(stderr, "Error al crear el manejador mpg123\n");
-    return -1;
-  }
-
-  if (mpg123_open(mh, filename) != MPG123_OK) {
-    fprintf(stderr, "Error al abrir el archivo MP3\n");
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  // Obtener información del archivo
-  long rate;
-  int channels, encoding;
-  mpg123_getformat(mh, &rate, &channels, &encoding);
-
-  printf("Archivo MP3:\n");
-  printf("  Tasa de muestreo: %ld Hz\n", rate);
-  printf("  Canales: %d\n", channels);
-  printf("  Formato de codificación: %d\n", encoding);
-
-  // Buffer para decodificación
-  unsigned char *buffer;
-  size_t buffer_size = mpg123_outblock(mh);
-  buffer = (unsigned char *)malloc(buffer_size);
-
-  size_t done;
-  int err;
-  do {
-    err = mpg123_read(mh, buffer, buffer_size, &done);
-    // Aquí puedes procesar los datos decodificados en 'buffer'
-    // printf("Decodificados %zu bytes\n", done);
-  } while (err == MPG123_OK && done > 0);
-
-  free(buffer);
-  mpg123_close(mh);
-  mpg123_delete(mh);
-  mpg123_exit();
-
-  return 0;
-}
-
-#define SAMPLE_RATE 44100
-#define CHANNELS 2
-#define FORMAT AUDIO_S16SYS
-
-int playMP3(const char *filename) {
-  // Inicializar mpg123
-  mpg123_init();
-
-  mpg123_handle *mh = mpg123_new(NULL, NULL);
-  if (mh == NULL) {
-    fprintf(stderr, "Error al crear el manejador mpg123\n");
-    return -1;
-  }
-
-  // Abrir el archivo MP3
-  if (mpg123_open(mh, filename) != MPG123_OK) {
-    fprintf(stderr, "Error al abrir el archivo MP3\n");
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  // Configurar SDL2 para audio
-  if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-    fprintf(stderr, "Error al inicializar SDL: %s\n", SDL_GetError());
-    mpg123_close(mh);
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  SDL_AudioSpec want, have;
-  SDL_AudioDeviceID dev;
-
-  SDL_zero(want);
-  want.freq = SAMPLE_RATE;
-  want.format = FORMAT;
-  want.channels = CHANNELS;
-  want.samples = 4096;
-  want.callback = NULL;
-
-  dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-  if (dev == 0) {
-    fprintf(stderr, "Error al abrir dispositivo de audio: %s\n",
-            SDL_GetError());
-    SDL_Quit();
-    mpg123_close(mh);
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  // Configurar decodificador
-  long rate;
-  int channels, encoding;
-  if (mpg123_getformat(mh, &rate, &channels, &encoding) != MPG123_OK) {
-    fprintf(stderr, "Error al obtener formato del MP3\n");
-    SDL_CloseAudioDevice(dev);
-    SDL_Quit();
-    mpg123_close(mh);
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  // Iniciar reproducción
-  SDL_PauseAudioDevice(dev, 0);
-
-  // Buffer para audio decodificado
-  unsigned char *buffer;
-  size_t buffer_size = mpg123_outblock(mh);
-  buffer = (unsigned char *)malloc(buffer_size);
-  if (buffer == NULL) {
-    fprintf(stderr, "Error al asignar memoria para el buffer\n");
-    SDL_CloseAudioDevice(dev);
-    SDL_Quit();
-    mpg123_close(mh);
-    mpg123_delete(mh);
-    return -1;
-  }
-
-  // Decodificar y reproducir
-  size_t done;
-  int err;
-  do {
-    err = mpg123_read(mh, buffer, buffer_size, &done);
-    SDL_QueueAudio(dev, buffer, done);
-    SDL_Delay(10); // Pequeña pausa para evitar sobrecarga
-  } while (err == MPG123_OK && done > 0);
-
-  // Esperar a que termine la reproducción
-  while (SDL_GetQueuedAudioSize(dev) > 0) {
-    SDL_Delay(100);
-  }
-
-  // Limpieza
-  free(buffer);
-  SDL_CloseAudioDevice(dev);
-  SDL_Quit();
-  mpg123_close(mh);
-  mpg123_delete(mh);
-  mpg123_exit();
-
-  return 0;
-}
-
-int main_mp3(int argc, char **argv) {
-  const char *filename =
-      NULL; // Replace "example.mp3" with the actual filename.
-
-  if (argc == 2) {
-    filename = argv[1];
-    g_print("%s", filename);
-  }
-
-  if (filename && playMP3(filename) == 0) {
-    printf("MP3 file read successfully.\n");
-  } else {
-    printf("Failed to read MP3 file.\n");
-  }
-
-  return 0;
 }
