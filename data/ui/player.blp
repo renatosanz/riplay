@@ -3,24 +3,29 @@ using Gtk 4.0;
 Window player{
   title:"riplay";
   resizable:false;
+  default-width:532;
+  default-height:400;
 
   [titlebar]
   HeaderBar {
-    [end]
-    MenuButton about_btn{
-      tooltip-text:"about";
+    [start]
+    MenuButton file_options{
+      tooltip-text:"file options";
       popover:PopoverMenu{
         menu-model:menu{
           section {
-            item {
-              label: 'New Window';
-              translatable:'yes';
-              action:'app.new';
-            }
+            item ("Open New File")
+            item ("Open Recent File", "app.open-recents")
+          }
+          section{
+            item ("Keyboard Shortcuts")
+          }
+          section{
+            item ("Credits")
           }
         };
       };
-    }  
+    }
   }
 
   Box {
@@ -32,49 +37,76 @@ Window player{
 
     orientation: vertical;
 
-    Box{
-      spacing:12;
-      Label audio_label{
-        label:"No Song!";
-        css-classes:["title-3"];
-        hexpand:true;
-      }
-    }
-
     Box {
       orientation: vertical;
       spacing:12;
       hexpand:true;
       
-      DrawingArea spectrum{
-        vexpand:true; 
-        hexpand:true; 
+      Box playing_view{
+        spacing:3;
+        orientation:vertical;
+        Label title_label{
+          label:"Title";
+          css-classes:["title-1"];
+          hexpand:true;
+        }
+        Label artis_album_label {
+          label:"Artist - Album";
+          css-classes:["dim-label"];
+          hexpand:true;
+        }
+        Label year_label{
+          label:"2000";
+          css-classes:["dim-label"];
+          hexpand:true;
+        }
+        DrawingArea spectrum_viewer{
+          vexpand:true; 
+          hexpand:true; 
+          content-height:50;
+          content-width:50;
+        }
       }
       
-      Box init_options_box{
-        orientation: horizontal;
+      
+      
+      Box default_view{
+        orientation: vertical;
         spacing:12;                 
+        hexpand:true;
+        vexpand:true;
 
-        Box{
-          vexpand:false;
-          Button open_file_btn{
-            label:"Open a file";
-          }
-        }
 
         Box{
           orientation: vertical;
           spacing:12;                 
-          Label {
-            label:"Recent Files";
-          }
+          Label riplay_label{
+            label:"riplay";
+            css-classes:["title-1"];
+            hexpand:true;
+          }        
 
-          ScrolledWindow{
-            Box recent_files_box{
-              orientation: vertical;
-              hexpand:true;
-              vexpand:true;
+          Label description_label{
+            label:"A simple music player";
+            hexpand:true;
+          }
+ 
+          Box{
+            spacing:12;                 
+
+            Button open_file_btn{
+              label:"Open new file";
             }
+            Button open_recent_btn{
+              label:"Open recent file";
+            }
+          }
+         
+          DrawingArea spectrum_default{
+            content-height:50;
+            content-width:50;
+            vexpand:true; 
+            hexpand:true; 
           }
         }
       }

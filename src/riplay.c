@@ -1,26 +1,68 @@
+#include "glib.h"
+#include <SDL2/SDL.h>
 #include <gtk/gtk.h>
 #include <gtk_utils.h>
+#include <metadata.h>
+#include <mpg123.h>
 #include <riplay.h>
 #include <stdio.h>
-
-#include <SDL2/SDL.h>
-#include <mpg123.h>
+#include <stdlib.h>
+#include <string.h>
 
 GtkApplication *app;
 GtkWindow *win;
+GtkWidget *spectrum;
+GtkWidget *player;
 
 #define PROJECT_NAME "riplay"
 char *filename = NULL;
+FileMetaData *metadata = NULL;
 
+// default window (no playing song) for open a recent or new file
 static int on_activate(GApplication *app, char *hint) {
-  win = openSingleWindow(app, filename);
+  (void)hint;
+  if (open_single_window(app, filename, &spectrum, &win, &player, metadata)) {
+    printf("Error oppening window\n");
+    return EXIT_FAILURE;
+  }
   return 0;
 }
 
-static void on_open_file(GApplication *app, GFile **files, int n_files,
-                         char *hint) {
+// open playing a song
+static int on_playing(GApplication *app, char *hint) {
+  (void)hint;
+
+  metadata = get_metadata(filename);
+  if (!metadata) {
+    printf("Error getting metadata\n");
+    return EXIT_FAILURE;
+  }
+
+  if (open_single_window(app, filename, &spectrum, &win, &player, metadata)) {
+    printf("Error oppening window\n");
+    return EXIT_FAILURE;
+  }
+
+  return 0;
+}
+
+// app shutdown (free global resources)
+static void on_shutdown() {
+  if (metadata) {
+    if (metadata->propieties) {
+      free(metadata->propieties);
+      metadata->propieties = NULL;
+    }
+    free(metadata);
+    metadata = NULL;
+  }
+  g_print("shutdown app\n");
+}
+
+static int on_open_file(GApplication *app, GFile **files, int n_files,
+                        char *hint) {
   if (n_files == 1) {
-    on_activate(app, filename);
+    on_playing(app, hint);
   } else {
     for (int i = 0; i < n_files; i++) {
       char *path = g_file_get_path(files[i]);
@@ -29,9 +71,10 @@ static void on_open_file(GApplication *app, GFile **files, int n_files,
       g_free(path);
     }
   }
+  return 0;
 }
 
-int main_gtk(int argc, char **argv) {
+int main(int argc, char **argv) {
   gtk_init();
 
   if (argc == 2) {
@@ -43,6 +86,7 @@ int main_gtk(int argc, char **argv) {
   gtk_window_set_default_icon_name(PROJECT_NAME);
   g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
   g_signal_connect(app, "open", G_CALLBACK(on_open_file), NULL);
+  g_signal_connect(app, "shutdown", G_CALLBACK(on_shutdown), NULL);
   int status = g_application_run(G_APPLICATION(app), argc, argv);
   g_object_unref(app);
 
@@ -197,7 +241,7 @@ int playMP3(const char *filename) {
   return 0;
 }
 
-int main(int argc, char **argv) {
+int main_mp3(int argc, char **argv) {
   const char *filename =
       NULL; // Replace "example.mp3" with the actual filename.
 

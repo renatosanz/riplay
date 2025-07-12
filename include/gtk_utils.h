@@ -1,2 +1,9 @@
+#ifndef GTK_UTILS_H
+#define GTK_UTILS_H
+
 #include "gtk/gtk.h"
-GtkWindow *openSingleWindow(GApplication *app, const char *filename);
+#include <types.h>
+int *open_single_window(GApplication *app, const char *filename,
+                      GtkWidget **spectrum, GtkWindow **win,GtkWidget **player,
+                      FileMetaData *metadata);
+#endif

@@ -20,6 +20,7 @@ m = meson.get_compiler('c').find_library('m', required: false)
 gtk4 = dependency('gtk4')
 gnome = import('gnome')
 mpg123_dep = dependency('libmpg123', required : true)
+taglib= dependency('taglib_c', required : true)
 sdl2_dep = dependency('sdl2', required : true)
 
 # all .c files in src_dir to be compiled 
@@ -56,7 +57,7 @@ resources = gnome.compile_resources(
 )
 
 dependencies = [
-  gtk4,m,sdl2_dep,mpg123_dep
+  gtk4,m,sdl2_dep,mpg123_dep,taglib
 ]
 
 exe = executable(
