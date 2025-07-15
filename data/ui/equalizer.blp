@@ -1,0 +1,55 @@
+using Gtk 4.0;
+
+Window equalizer_win{
+  title:"equalizer";
+  resizable:false;
+  default-width:400;
+  default-height:300;
+
+  [titlebar]
+  HeaderBar {
+    [start]
+    Switch on_off_toggle{
+      action-name:"app.enable-equalizer";
+    }
+  }
+
+  Box {
+    margin-top:12;
+    margin-bottom:12;
+    margin-start:12;
+    margin-end:12;
+    spacing:12;
+
+    orientation: vertical;
+
+    ScrolledWindow{
+      Box bands_container {
+        spacing:2;
+        hexpand:true;
+        vexpand:true;
+      }
+    }
+  }
+}
+
+Box band_model{
+  orientation:vertical;
+  
+  Scale band_scale{
+    orientation:vertical;
+    draw-value:true;
+    vexpand:true;
+    adjustment:Adjustment {
+      lower:0;
+      upper:100;
+      step-increment:1;
+      page-increment:10;
+      value:50;
+    };
+  }
+
+  Label band_label{
+    label:"frec Hz";
+  }
+}

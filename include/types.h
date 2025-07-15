@@ -21,7 +21,7 @@ typedef struct {
   char genre[MAX_TEXT_DATA];
   int year;
   int track;
-  AudioProps *propieties;
+  AudioProps *properties;
 } FileMetaData ;
 
 typedef struct {
@@ -35,5 +35,15 @@ typedef struct {
   char *filename;
   FileMetaData *metadata;
 } AppData;
+
+typedef struct{
+  GtkScale *band_scale;
+  GtkLabel *band_label;
+  GtkBox *band_cont;
+  gfloat max_value;
+  gfloat min_value;
+  gfloat default_value;
+  gfloat frecuency;
+}EqualizerSliderData;
 
 #endif

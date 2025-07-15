@@ -35,13 +35,13 @@ FileMetaData *get_metadata(const char *filename) {
 
   TagLib_AudioProperties *props = taglib_file_audioproperties(file);
   if (props) {
-    metadata->propieties = g_new0(AudioProps, 1);
-    if (!metadata->propieties)
+    metadata->properties = g_new0(AudioProps, 1);
+    if (!metadata->properties)
       return NULL;
-    metadata->propieties->length = taglib_audioproperties_length(props);
-    metadata->propieties->bitrate = taglib_audioproperties_bitrate(props);
-    metadata->propieties->samplerate = taglib_audioproperties_samplerate(props);
-    metadata->propieties->channels = taglib_audioproperties_channels(props);
+    metadata->properties->length = taglib_audioproperties_length(props);
+    metadata->properties->bitrate = taglib_audioproperties_bitrate(props);
+    metadata->properties->samplerate = taglib_audioproperties_samplerate(props);
+    metadata->properties->channels = taglib_audioproperties_channels(props);
   }
 
   g_print("title: %s", metadata->title);

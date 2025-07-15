@@ -4,7 +4,7 @@ Window recents{
   title:"recent files";
   resizable:false;
   modal:true;
-  default-width:300;
+  default-width:350;
   default-height:200;
   Box {
     margin-top:12;
@@ -14,10 +14,25 @@ Window recents{
     spacing:12;
 
     orientation: vertical;
-    Label {
-      label:"Recent Files";
-    }
 
+    Box{
+      Button reset_history_btn{
+        label:"Reset";
+        css-classes:["destructive-action"];
+      }
+      Box{
+        hexpand:true;
+        Label {
+          hexpand:true;
+          label:"Recent Files";
+        }
+      }
+      Button back_btn{
+        label:"Cancel";
+        css-classes:["circular"];
+      }
+    }
+   
     ScrolledWindow{
       Box recent_files_box{
         orientation: vertical;
