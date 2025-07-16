@@ -34,7 +34,7 @@ GtkApplication *app_global;
  */
 static int on_activate(GApplication *app, char *hint) {
   (void)hint;
-  if (load_home_window(app, &app_data->drawing_area, &app_data->win)) {
+  if (load_home_window(app, app_data)) {
     g_critical("Error opening window");
     return EXIT_FAILURE;
   }
@@ -56,6 +56,14 @@ int clean_new_on_playing(const char *filename) {
     g_critical("Invalid parameters");
     return EXIT_FAILURE;
   }
+
+  if (app_data->pipeline) {
+    gst_element_set_state(app_data->pipeline, GST_STATE_NULL);
+    gst_object_unref(app_data->pipeline);
+  }
+
+  g_mutex_clear(&app_data->data_mutex);
+  g_clear_pointer(&app_data->audio_data, g_free);
 
   // Clean up existing window and resources
   gtk_window_destroy(GTK_WINDOW(app_data->win));
@@ -102,10 +110,7 @@ static int on_playing(GApplication *app, char *hint) {
   }
 
   // Load player window
-  if (load_player_window(G_APPLICATION(app_global), app_data->filename,
-                         &app_data->drawing_area, &app_data->win,
-                         &app_data->media_controls, &app_data->media_stream,
-                         app_data->metadata)) {
+  if (load_player_window(G_APPLICATION(app_global), app_data)) {
     g_critical("Error opening window");
     return EXIT_FAILURE;
   }

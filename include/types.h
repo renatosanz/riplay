@@ -34,6 +34,8 @@ typedef struct {
   guint timeout_id;
   char *filename;
   FileMetaData *metadata;
+  GMutex data_mutex;
+  GstElement *pipeline;
 } AppData;
 
 typedef struct{

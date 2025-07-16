@@ -13,12 +13,8 @@ void load_actions(GApplication *app);
 
 // windows
 GtkBuilder *load_builder(const char *path);
-int load_home_window(GApplication *app, GtkWidget **spectrum, GtkWindow **win);
-int load_player_window(GApplication *app, const char *filename,
-                       GtkWidget **spectrum, GtkWindow **win,
-                       GtkWidget **player, GtkMediaStream **stream,
-                       FileMetaData *metadata);
-
+int load_home_window(GApplication *app, AppData *app_data);
+int load_player_window(GApplication *app, AppData *app_data);
 // action callbacks
 void open_new_file_dialog(GSimpleAction *action, GVariant *parameter,
                           GApplication *app);

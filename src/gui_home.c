@@ -25,7 +25,10 @@ static int position = 0; // Position variable for animation drawing
  * @param win Pointer to store the created window
  * @return int 0 on success, non-zero on error
  */
-int load_home_window(GApplication *app, GtkWidget **spectrum, GtkWindow **win) {
+int load_home_window(GApplication *app, AppData *app_data) {
+  // Validación de parámetros
+  g_return_val_if_fail(app != NULL && app_data != NULL, -1);
+
   // Load actions for UI buttons
   load_actions(app);
 
@@ -37,31 +40,31 @@ int load_home_window(GApplication *app, GtkWidget **spectrum, GtkWindow **win) {
   }
 
   // Get window from builder
-  *win = GTK_WINDOW(gtk_builder_get_object(builder, "default_window"));
-  if (!*win) {
+  app_data->win = GTK_WINDOW(gtk_builder_get_object(builder, "default_window"));
+  if (!app_data->win) {
     g_critical("Failed to get home window from builder");
     g_object_unref(builder);
     return -1;
   }
 
   // Set up standby animation
-  *spectrum = GTK_WIDGET(gtk_builder_get_object(builder, "spectrum_default"));
-  gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(*spectrum),
+  app_data->drawing_area =
+      GTK_WIDGET(gtk_builder_get_object(builder, "spectrum_default"));
+  gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(app_data->drawing_area),
                                  draw_stand_by_function, NULL, NULL);
 
   // Start animation timer (32ms interval ≈ 30fps)
-  timeout_id = g_timeout_add(32, on_timeout, *spectrum);
+  timeout_id = g_timeout_add(32, on_timeout, app_data->drawing_area);
 
   // Clean up builder
   g_object_unref(builder);
 
   // Display window
-  gtk_application_add_window(GTK_APPLICATION(app), *win);
-  gtk_window_present(*win);
+  gtk_application_add_window(GTK_APPLICATION(app), app_data->win);
+  gtk_window_present(app_data->win);
 
   return 0;
 }
-
 /**
  * @brief Draws standby animation (sine wave)
  *
