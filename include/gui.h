@@ -30,6 +30,9 @@ void open_equalizer(GSimpleAction *action, GVariant *parameter,
                     GApplication *app);
 void toggle_enable_equalizer(GSimpleAction *action, GVariant *parameter,
                       GApplication *app);
+void close_equalizer(GSimpleAction *action, GVariant *parameter,
+                      GApplication *app);
+
 // animations
 void draw_stand_by_function(GtkDrawingArea *area, cairo_t *cr, int width,
                             int height, gpointer data);

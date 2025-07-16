@@ -43,6 +43,7 @@ typedef struct{
   gfloat max_value;
   gfloat min_value;
   gfloat default_value;
+  gfloat value;
   gfloat frecuency;
 }EqualizerSliderData;
 

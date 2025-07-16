@@ -3,8 +3,8 @@ using Gtk 4.0;
 Window equalizer_win{
   title:"equalizer";
   resizable:false;
-  default-width:400;
-  default-height:300;
+  default-width:500;
+  default-height:320;
 
   [titlebar]
   HeaderBar {
@@ -25,31 +25,22 @@ Window equalizer_win{
 
     ScrolledWindow{
       Box bands_container {
-        spacing:2;
         hexpand:true;
         vexpand:true;
+      }
+    }
+    Box{
+      Button{
+        label:"Reset";
+        css-classes:["destructive-action"];
+      }
+      Box{hexpand:true;}
+      Button{
+        label:"Back";
+        action-name:"app.close-equalizer";
       }
     }
   }
 }
 
-Box band_model{
-  orientation:vertical;
-  
-  Scale band_scale{
-    orientation:vertical;
-    draw-value:true;
-    vexpand:true;
-    adjustment:Adjustment {
-      lower:0;
-      upper:100;
-      step-increment:1;
-      page-increment:10;
-      value:50;
-    };
-  }
 
-  Label band_label{
-    label:"frec Hz";
-  }
-}

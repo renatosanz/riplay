@@ -6,8 +6,10 @@
  * provides utility functions for loading UI builders from resources.
  */
 
+#include "gio/gio.h"
 #include "glib-object.h"
 #include "gui.h"
+#include <stdio.h>
 
 /**
  * @brief Loads and connects all application actions
@@ -34,6 +36,8 @@ void load_actions(GApplication *app) {
       g_simple_action_new("open-equalizer", NULL);
   GSimpleAction *enable_equalizer_action_obj =
       g_simple_action_new("enable-equalizer", NULL);
+  GSimpleAction *close_equalizer_action_obj =
+      g_simple_action_new("close-equalizer", NULL);
 
   // Connect action signals to their handlers
   g_signal_connect(recents_action_obj, "activate",
@@ -46,6 +50,8 @@ void load_actions(GApplication *app) {
                    G_CALLBACK(open_equalizer), app);
   g_signal_connect(enable_equalizer_action_obj, "activate",
                    G_CALLBACK(toggle_enable_equalizer), app);
+  g_signal_connect(close_equalizer_action_obj, "activate",
+                   G_CALLBACK(close_equalizer), NULL);
 
   // Add actions to the application's action map
   GActionMap *action_map = G_ACTION_MAP(app);
@@ -54,6 +60,7 @@ void load_actions(GApplication *app) {
   g_action_map_add_action(action_map, G_ACTION(open_new_file_action_obj));
   g_action_map_add_action(action_map, G_ACTION(open_equalizer_action_obj));
   g_action_map_add_action(action_map, G_ACTION(enable_equalizer_action_obj));
+  g_action_map_add_action(action_map, G_ACTION(close_equalizer_action_obj));
 }
 
 /**

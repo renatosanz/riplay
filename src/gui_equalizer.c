@@ -2,6 +2,7 @@
 #include "gtk/gtk.h"
 #include "gui.h"
 #include "types.h"
+#include <stdio.h>
 #include <string.h>
 
 #define EQUALIZER_UI_PATH "/org/riplay/data/ui/equalizer.ui"
@@ -10,20 +11,25 @@ static GtkWindow *equalizer_win; // equalizer window
 static gfloat frecs_range[EQUALIZER_BANDS] = {30,   64,   125,  250, 500,
                                               1000, 2000, 3000, 5000};
 
-static gfloat band_marks[] = {0, 25, 50, 75, 100};
-EqualizerSliderData *bands;
+static EqualizerSliderData *bands = NULL;
 gboolean is_equalizer_enabled = false;
 
 void toggle_enable_equalizer(GSimpleAction *action, GVariant *parameter,
                              GApplication *app) {
   is_equalizer_enabled = !is_equalizer_enabled;
-  is_equalizer_enabled ? g_print("equalizer enabled!!!\n")
-                       : g_print("equalizer disabled!!!\n");
-
   for (int i = 0; i < EQUALIZER_BANDS; i++) {
     gtk_widget_set_sensitive(GTK_WIDGET(bands[i].band_scale),
                              is_equalizer_enabled);
   }
+}
+
+static void on_scale_value_changed(GtkScale *scale, EqualizerSliderData *data) {
+  data->value = gtk_range_get_value(GTK_RANGE(scale));
+}
+
+void close_equalizer(GSimpleAction *action, GVariant *parameter,
+                     GApplication *app) {
+  gtk_window_destroy(GTK_WINDOW(equalizer_win));
 }
 
 void open_equalizer(GSimpleAction *action, GVariant *parameter,
@@ -54,22 +60,40 @@ void open_equalizer(GSimpleAction *action, GVariant *parameter,
     return;
   }
 
+  GtkSwitch *on_off_toggle =
+      GTK_SWITCH(gtk_builder_get_object(builder, "on_off_toggle"));
+  if (!on_off_toggle) {
+    g_critical("Failed to get bands container ");
+    g_object_unref(builder);
+    return;
+  }
+
+  gtk_switch_set_active(on_off_toggle, is_equalizer_enabled);
+
   // for each frec create a band, includes a slider and label within a GtkBox
-  bands = g_new0(EqualizerSliderData, EQUALIZER_BANDS);
+  if (!bands) {
+    bands = g_new0(EqualizerSliderData, EQUALIZER_BANDS);
+    for (int i = 0; i < EQUALIZER_BANDS; i++) {
+      bands[i].default_value = 50;
+      bands[i].min_value = 0;
+      bands[i].max_value = 100;
+      bands[i].value = bands[i].default_value;
+    }
+  }
   for (int i = 0; i < EQUALIZER_BANDS; i++) {
     bands[i].frecuency = frecs_range[i];
 
     GtkWidget *band_cont = GTK_WIDGET(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
     gtk_box_append(GTK_BOX(bands_container), band_cont);
 
-    GtkWidget *band_scale = GTK_WIDGET(
-        gtk_scale_new_with_range(GTK_ORIENTATION_VERTICAL, 0, 100, 1));
+    GtkWidget *band_scale = GTK_WIDGET(gtk_scale_new_with_range(
+        GTK_ORIENTATION_VERTICAL, bands[i].min_value, bands[i].max_value, 1));
     gtk_widget_set_vexpand(band_scale, true);
-
-    for (int i = 0; i < 5; i++) {
-      gtk_scale_add_mark(GTK_SCALE(band_scale), band_marks[i], GTK_POS_TOP,
-                         g_strdup_printf("<span>%0.f</span>", band_marks[i]));
-    }
+    gtk_range_set_value(GTK_RANGE(band_scale), bands[i].value);
+    gtk_scale_set_draw_value(GTK_SCALE(band_scale), true);
+    gtk_widget_set_sensitive(GTK_WIDGET(band_scale), is_equalizer_enabled);
+    g_signal_connect(GTK_WIDGET(band_scale), "value-changed",
+                     G_CALLBACK(on_scale_value_changed), &bands[i]);
 
     GtkWidget *band_label = GTK_WIDGET(gtk_label_new(""));
 
