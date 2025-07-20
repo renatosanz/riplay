@@ -1,4 +1,8 @@
+#include "gio/gio.h"
+#include "gtk/gtk.h"
+#include "gtk/gtkshortcut.h"
 #include "gui.h"
+#include <metadata.h>
 
 static void draw_callback(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data) {
@@ -62,12 +66,16 @@ static gboolean on_timeout_playing(gpointer user_data) {
 int load_player_window(GApplication *app, AppData *app_data) {
   load_actions(app);
 
+  unsigned long size;
+  unsigned char *img_data = extract_album_art(app_data->filename, &size);
+
   GtkBuilder *b = load_builder("/org/riplay/data/ui/player.ui");
   app_data->win = GTK_WINDOW(gtk_builder_get_object(b, "player_window"));
 
   if (app_data->metadata && app_data->filename) {
     app_data->media_stream =
         gtk_media_file_new_for_filename(app_data->filename);
+    gtk_media_stream_set_playing(app_data->media_stream, true);
 
     const char *artis_label_format =
         "%s - %s"; // format for artist - album label
@@ -106,14 +114,26 @@ int load_player_window(GApplication *app, AppData *app_data) {
     gtk_media_controls_set_media_stream(
         GTK_MEDIA_CONTROLS(app_data->media_controls), app_data->media_stream);
 
-    // init visualizer
-    app_data->drawing_area =
-        GTK_WIDGET(gtk_builder_get_object(b, "spectrum_viewer"));
-    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(app_data->drawing_area),
-                                   draw_callback, app_data, NULL);
+    GtkBox *albumart_content =
+        GTK_BOX(gtk_builder_get_object(b, "album_lyrics_cont"));
 
-    timeout_id =
-        g_timeout_add(32, on_timeout_playing, app_data); // draw spectrum_viewer
+    if (img_data) {
+      GdkPixbufLoader *loader = gdk_pixbuf_loader_new();
+      gdk_pixbuf_loader_write(loader, img_data, size, NULL);
+      gdk_pixbuf_loader_close(loader, NULL);
+      GdkPixbuf *pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+
+      // Create a GTK image widget
+      GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+      gtk_widget_set_vexpand(image, TRUE);
+      gtk_widget_set_hexpand(image, TRUE);
+      gtk_box_append(albumart_content, image);
+    }
+    GtkWidget *lyrics = gtk_label_new("Lyrics");
+    gtk_widget_set_vexpand(lyrics, TRUE);
+    gtk_widget_set_hexpand(lyrics, TRUE);
+    gtk_box_append(albumart_content, lyrics);
+    // init visualizer
     g_object_unref(b);
 
     gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(app_data->win));

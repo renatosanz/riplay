@@ -4,4 +4,5 @@
 
 FileMetaData *get_metadata(const char *filename);
 
+unsigned char *extract_album_art(const char *filepath, unsigned long *size);
 #endif

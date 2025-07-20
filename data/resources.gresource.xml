@@ -6,7 +6,7 @@
     <file preprocess="xml-stripblanks">data/ui/default.ui</file>
     <file preprocess="xml-stripblanks">data/ui/recents.ui</file>
     <file preprocess="xml-stripblanks">data/ui/visuals_menu.ui</file>
-    <file preprocess="xml-stripblanks">data/ui/equalizer.ui</file>
+    <file >data/img/img.jpg</file>
     <!-- <file preprocess="xml-stripblanks">data/icons/arrows-loop-symbolic.svg</file> -->
     <!-- <file preprocess="xml-stripblanks">ui/preferences.ui</file> -->
     <!-- Otros recursos (opcional) -->

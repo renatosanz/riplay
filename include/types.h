@@ -1,4 +1,4 @@
-#ifndef TYPES_H 
+#ifndef TYPES_H
 #define TYPES_H
 
 #include <cairo.h>
@@ -12,7 +12,7 @@ typedef struct {
   int samplerate;
   int channels;
   int bitrate;
-}AudioProps ;
+} AudioProps;
 
 typedef struct {
   char title[MAX_TEXT_DATA];
@@ -22,7 +22,7 @@ typedef struct {
   int year;
   int track;
   AudioProps *properties;
-} FileMetaData ;
+} FileMetaData;
 
 typedef struct {
   GtkWidget *drawing_area;
@@ -38,7 +38,7 @@ typedef struct {
   GstElement *pipeline;
 } AppData;
 
-typedef struct{
+typedef struct {
   GtkScale *band_scale;
   GtkLabel *band_label;
   GtkBox *band_cont;
@@ -47,6 +47,6 @@ typedef struct{
   gfloat default_value;
   gfloat value;
   gfloat frecuency;
-}EqualizerSliderData;
+} EqualizerSliderData;
 
 #endif
