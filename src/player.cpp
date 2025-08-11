@@ -1,8 +1,16 @@
 #include "gio/gio.h"
+#include "glib-object.h"
+#include "glib.h"
 #include "gtk/gtk.h"
 #include "gtk/gtkshortcut.h"
 #include "gui.h"
+#include "mpegfile.h"
+#include "pango/pango-layout.h"
+#include "types.h"
+#include <iostream>
 #include <metadata.h>
+#include <variant>
+#include <vector>
 
 static void draw_callback(GtkDrawingArea *area, cairo_t *cr, int width,
                           int height, gpointer user_data) {
@@ -67,15 +75,23 @@ int load_player_window(GApplication *app, AppData *app_data) {
   load_actions(app);
 
   unsigned long size;
-  unsigned char *img_data = extract_album_art(app_data->filename, &size);
+  unsigned char *img_data = extractAlbumArt(app_data->filename, &size);
 
   GtkBuilder *b = load_builder("/org/riplay/data/ui/player.ui");
   app_data->win = GTK_WINDOW(gtk_builder_get_object(b, "player_window"));
 
+  auto lyrics = extractLyrics(app_data->filename);
+  if (std::holds_alternative<std::string>(lyrics)) {
+    app_data->lyric_props = std::vector<LyricProp>({});
+    app_data->lyrics =
+        parser_lyrics(std::get<std::string>(lyrics), app_data->lyric_props);
+  }
+
   if (app_data->metadata && app_data->filename) {
     app_data->media_stream =
         gtk_media_file_new_for_filename(app_data->filename);
-    gtk_media_stream_set_playing(app_data->media_stream, true);
+    // gtk_media_stream_set_playing(app_data->media_stream, true);
+    gtk_media_stream_get_timestamp(app_data->media_stream);
 
     const char *artis_label_format =
         "%s - %s"; // format for artist - album label
@@ -129,10 +145,29 @@ int load_player_window(GApplication *app, AppData *app_data) {
       gtk_widget_set_hexpand(image, TRUE);
       gtk_box_append(albumart_content, image);
     }
-    GtkWidget *lyrics = gtk_label_new("Lyrics");
-    gtk_widget_set_vexpand(lyrics, TRUE);
-    gtk_widget_set_hexpand(lyrics, TRUE);
-    gtk_box_append(albumart_content, lyrics);
+    app_data->lyrics_label = gtk_label_new("No lyrics");
+    if (!app_data->lyrics.empty()) {
+      gtk_label_set_label(GTK_LABEL(app_data->lyrics_label),
+                          app_data->lyrics[0].lyric.c_str());
+      start_lyrics_display(app_data->lyrics, app_data->media_stream,
+                           GTK_LABEL(app_data->lyrics_label));
+      if (!app_data->lyric_props.empty()) {
+        for (auto x : app_data->lyric_props) {
+          std::cout << x.field << " : " << x.value << std::endl;
+        }
+      }
+    }
+    gtk_widget_set_vexpand(app_data->lyrics_label, TRUE);
+    gtk_widget_set_hexpand(app_data->lyrics_label, TRUE);
+    gtk_label_set_wrap(GTK_LABEL(app_data->lyrics_label), true);
+    gtk_widget_set_margin_bottom(app_data->lyrics_label, 20);
+    gtk_widget_set_margin_top(app_data->lyrics_label, 20);
+    gtk_widget_set_margin_start(app_data->lyrics_label, 20);
+    gtk_widget_set_margin_end(app_data->lyrics_label, 20);
+    gtk_label_set_max_width_chars(GTK_LABEL(app_data->lyrics_label), 16);
+    gtk_label_set_width_chars(GTK_LABEL(app_data->lyrics_label), 8);
+    gtk_label_set_xalign(GTK_LABEL(app_data->lyrics_label), GTK_ALIGN_CENTER);
+    gtk_box_append(albumart_content, app_data->lyrics_label);
     // init visualizer
     g_object_unref(b);
 

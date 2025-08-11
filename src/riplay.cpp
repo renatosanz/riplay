@@ -69,6 +69,7 @@ int clean_new_on_playing(const char *filename) {
   gtk_window_destroy(GTK_WINDOW(app_data->win));
   g_object_unref(app_data->win);
 
+  stop_lyrics_display();
   free_global_resources(app_data);
 
   // Initialize new application data
@@ -125,6 +126,7 @@ static int on_playing(GApplication *app, char *hint) {
  */
 static void on_shutdown() {
   free_global_resources(app_data);
+  stop_lyrics_display();
   g_print("Application shutdown\n");
 }
 
