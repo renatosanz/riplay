@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
   // create and configure GTK application
   app_global =
       gtk_application_new("org.riprtx.riplay", G_APPLICATION_HANDLES_OPEN);
-  gtk_window_set_default_icon_name(PROJECT_NAME);
+  // gtk_window_set_default_icon_name(PROJECT_NAME);
 
   // connect signal handlers
   g_signal_connect(app_global, "activate", G_CALLBACK(on_activate), NULL);
