@@ -7,6 +7,7 @@
 #include "mpegfile.h"
 #include "pango/pango-layout.h"
 #include "types.h"
+#include <glycin-2/glycin.h>
 #include <iostream>
 #include <metadata.h>
 #include <variant>
@@ -140,7 +141,8 @@ int load_player_window(GApplication *app, AppData *app_data) {
       GdkPixbuf *pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
 
       // Create a GTK image widget
-      GtkWidget *image = gtk_image_new_from_pixbuf(pixbuf);
+      GtkWidget *image = gtk_image_new_from_paintable(
+          GDK_PAINTABLE(gdk_texture_new_from_pixbuf(pixbuf)));
       gtk_widget_set_vexpand(image, TRUE);
       gtk_widget_set_hexpand(image, TRUE);
       gtk_box_append(albumart_content, image);

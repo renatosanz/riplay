@@ -60,6 +60,7 @@ static void lyrics_worker(GtkMediaStream *stream) {
 
   while (lyrics_running && index < lyrics_count) {
     if (gtk_media_stream_get_playing(stream)) {
+
       guint64 current_time = gtk_media_stream_get_timestamp(stream);
 
       if (current_lyrics[index].timestamp > current_time) {
@@ -78,6 +79,11 @@ static void lyrics_worker(GtkMediaStream *stream) {
                    (gpointer)current_lyrics[index].lyric.c_str());
         index++;
       }
+    } else if (index == lyrics_count - 1) {
+      index = 0;
+      lyrics_running = true;
+      g_printf("flaaaaaaaag!! index : %d  lyrics_count : %d", index,
+               lyrics_count);
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
