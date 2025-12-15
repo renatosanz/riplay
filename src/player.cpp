@@ -139,13 +139,16 @@ int load_player_window(GApplication *app, AppData *app_data) {
       gdk_pixbuf_loader_write(loader, img_data, size, NULL);
       gdk_pixbuf_loader_close(loader, NULL);
       GdkPixbuf *pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+      GdkTexture *texture = gdk_texture_new_for_pixbuf(pixbuf);
 
       // Create a GTK image widget
-      GtkWidget *image = gtk_image_new_from_paintable(
-          GDK_PAINTABLE(gdk_texture_new_from_pixbuf(pixbuf)));
+      GtkWidget *image = gtk_picture_new_for_paintable(GDK_PAINTABLE(texture));
       gtk_widget_set_vexpand(image, TRUE);
       gtk_widget_set_hexpand(image, TRUE);
       gtk_box_append(albumart_content, image);
+
+      g_object_unref(texture);
+      g_object_unref(loader);
     }
     app_data->lyrics_label = gtk_label_new("No lyrics");
     if (!app_data->lyrics.empty()) {
