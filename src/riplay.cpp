@@ -33,6 +33,7 @@ int clean_new_on_playing(const char *filename) {
   gtk_window_destroy(GTK_WINDOW(app_data->win));
   g_object_unref(app_data->win);
 
+  stop_lyrics_display();
   free_global_resources(app_data);
 
   app_data = g_new0(AppData, 1);
@@ -71,6 +72,7 @@ static int on_playing(GApplication *app, char *hint) {
 
 static void on_shutdown() {
   free_global_resources(app_data);
+  stop_lyrics_display();
   g_print("Application shutdown\n");
 }
 
@@ -102,7 +104,7 @@ int main(int argc, char **argv) {
 
   app_global =
       gtk_application_new("org.riprtx.riplay", G_APPLICATION_HANDLES_OPEN);
-  gtk_window_set_default_icon_name(PROJECT_NAME);
+  // gtk_window_set_default_icon_name(PROJECT_NAME);
 
   g_signal_connect(app_global, "activate", G_CALLBACK(on_activate), NULL);
   g_signal_connect(app_global, "open", G_CALLBACK(on_open_file), NULL);

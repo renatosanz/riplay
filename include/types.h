@@ -1,9 +1,11 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "iostream"
 #include <cairo.h>
 #include <gstreamer-1.0/gst/gst.h>
 #include <gtk/gtk.h>
+#include <vector>
 
 #define MAX_TEXT_DATA 128
 
@@ -25,8 +27,19 @@ typedef struct {
 } FileMetaData;
 
 typedef struct {
+  guint64 timestamp;
+  std::string lyric;
+} LyricBar;
+
+typedef struct {
+  std::string field;
+  std::string value;
+} LyricProp;
+
+typedef struct {
   GtkWidget *drawing_area;
   GtkWidget *media_controls;
+  GtkWidget *lyrics_label;
   GtkWindow *win;
   GtkMediaStream *media_stream;
   float *audio_data;
@@ -36,6 +49,8 @@ typedef struct {
   FileMetaData *metadata;
   GMutex data_mutex;
   GstElement *pipeline;
+  std::vector<LyricBar> lyrics;
+  std::vector<LyricProp> lyric_props;
 } AppData;
 
 typedef struct {

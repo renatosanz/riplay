@@ -6,6 +6,7 @@
  */
 
 #include "file_history.h"
+#include "gio/gio.h"
 #include "gui.h"
 #include "riplay.h"
 
@@ -90,6 +91,11 @@ void open_recent_files(GSimpleAction *action, GVariant *parameter,
     for (int i = 0; iter != NULL && i < MAX_RECENT_FILES;
          i++, iter = iter->next) {
       const gchar *filepath = (const gchar *)iter->data;
+
+      if (!g_file_query_exists(g_file_new_for_path(filepath), NULL)) {
+        continue;
+      }
+
       GFile *file = g_file_new_for_path(filepath);
 
       // Create button with filename (without path)
