@@ -37,16 +37,6 @@ typedef struct {
 } LyricProp;
 
 typedef struct {
-  guint64 timestamp;
-  std::string lyric;
-} LyricBar;
-
-typedef struct {
-  std::string field;
-  std::string value;
-} LyricProp;
-
-typedef struct {
   GtkWindow *win;
 
   // animations
