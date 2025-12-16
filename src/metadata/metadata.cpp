@@ -1,8 +1,6 @@
+#include "types.h"
 #include <cstring>
 #include <glib.h>
-#include <iostream>
-#include <metadata.h>
-#include <string>
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/id3v2tag.h>
@@ -51,8 +49,7 @@ FileMetaData *get_metadata(const char *filename) {
     }
   }
 
-  g_print("title: %s", metadata->title);
+  g_print("title: %s\n", metadata->title);
 
   return metadata;
 }
-#

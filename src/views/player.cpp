@@ -1,15 +1,17 @@
+#include "player.h"
+#include "actions.h"
 #include "gio/gio.h"
 #include "glib-object.h"
 #include "glib.h"
 #include "gtk/gtk.h"
 #include "gtk/gtkshortcut.h"
-#include "gui.h"
+#include "include/metadata.h"
 #include "mpegfile.h"
 #include "pango/pango-layout.h"
 #include "types.h"
+#include "utils.h"
 #include <glycin-2/glycin.h>
 #include <iostream>
-#include <metadata.h>
 #include <variant>
 #include <vector>
 
@@ -57,12 +59,12 @@ static void update_visualizer(AppData *app) {
       app->audio_data[i] = sin(i * 0.1) * 0.5;
     }
 
-    gtk_widget_queue_draw(app->drawing_area);
+    gtk_widget_queue_draw(GTK_WIDGET(app->home->drawing_area));
   } else {
     if (app->audio_data)
       g_free(app->audio_data);
     app->audio_data = NULL;
-    gtk_widget_queue_draw(app->drawing_area);
+    gtk_widget_queue_draw(GTK_WIDGET(app->home->drawing_area));
   }
 }
 
@@ -72,16 +74,20 @@ static gboolean on_timeout_playing(gpointer user_data) {
   return G_SOURCE_CONTINUE;
 }
 
-int load_player_window(GApplication *app, AppData *app_data) {
-  load_actions(app);
+int load_player_window(AppData *app_data) {
+  // load_actions(app_data);
 
   unsigned long size;
   unsigned char *img_data = extractAlbumArt(app_data->filename, &size);
 
   GtkBuilder *b = load_builder("/org/riplay/data/ui/player.ui");
-  app_data->win = GTK_WINDOW(gtk_builder_get_object(b, "player_window"));
 
+  app_data->player->win =
+      GTK_WINDOW(gtk_builder_get_object(b, "player_window"));
+  printf("flaaaaaaaaaaaag -  entering to load_player_window %s\n",
+         app_data->filename);
   auto lyrics = extractLyrics(app_data->filename);
+
   if (std::holds_alternative<std::string>(lyrics)) {
     app_data->lyric_props = std::vector<LyricProp>({});
     app_data->lyrics =
@@ -176,8 +182,9 @@ int load_player_window(GApplication *app, AppData *app_data) {
     // init visualizer
     g_object_unref(b);
 
-    gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(app_data->win));
-    gtk_window_present(GTK_WINDOW(app_data->win));
+    gtk_application_add_window(GTK_APPLICATION(app_data->app),
+                               GTK_WINDOW(app_data->player->win));
+    gtk_window_present(GTK_WINDOW(app_data->player->win));
     return 0;
   } else {
     g_printerr("error loading player!");

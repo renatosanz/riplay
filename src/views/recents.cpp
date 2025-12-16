@@ -7,15 +7,19 @@
 
 #include "file_history.h"
 #include "gio/gio.h"
-#include "gui.h"
-#include "riplay.h"
+#include "glib.h"
+#include "gtk/gtk.h"
+#include "player.h"
+#include "types.h"
+#include "utils.h"
+#include <cstring>
 
 #define MAX_RECENT_FILES 5
 #define RECENTS_UI_PATH "/org/riplay/data/ui/recents.ui"
 
-static GtkWindow *recent_win; // recents modal window
-
-static void close_recents_window(GtkButton *button, gpointer user_data);
+static void close_recents_window(GtkButton *_button, GtkWindow *win) {
+  gtk_window_close(win);
+}
 
 /**
  * @brief Callback for when a recent file is selected
@@ -23,19 +27,12 @@ static void close_recents_window(GtkButton *button, gpointer user_data);
  * @param button The clicked button
  * @param user_data The file path (gchar*)
  */
-static void on_recent_file_clicked(GtkButton *button, gpointer user_data) {
-  const gchar *filepath = (const gchar *)user_data;
+static void on_recent_file_clicked(GtkButton *button, gchar *filepath) {
 
   g_return_if_fail(filepath != NULL);
 
-  // Stop any current playback
-  if (timeout_id > 0) {
-    g_source_remove(timeout_id);
-    timeout_id = 0;
-  }
+  g_print("opening recent file %s\n", filepath);
 
-  // Start playback of selected file
-  close_recents_window(button, user_data);
   clean_new_on_playing(filepath);
 }
 
@@ -50,9 +47,9 @@ static void on_recent_file_clicked(GtkButton *button, gpointer user_data) {
  * @param parameter Action parameter (unused)
  * @param app The application instance
  */
-void open_recent_files(GSimpleAction *action, GVariant *parameter,
-                       GApplication *app) {
-  g_return_if_fail(GTK_IS_APPLICATION(app));
+void open_recent_files(GSimpleAction *_action, GVariant *_parameter,
+                       AppData *app_data) {
+  g_return_if_fail(GTK_IS_APPLICATION(app_data->app));
 
   // Load UI from resources
   GtkBuilder *builder = load_builder(RECENTS_UI_PATH);
@@ -62,8 +59,9 @@ void open_recent_files(GSimpleAction *action, GVariant *parameter,
   }
 
   // Get window from builder
-  recent_win = GTK_WINDOW(gtk_builder_get_object(builder, "recents"));
-  if (!recent_win) {
+  app_data->recents->win =
+      GTK_WINDOW(gtk_builder_get_object(builder, "recents"));
+  if (!app_data->recents->win) {
     g_critical("Failed to get recent files window");
     g_object_unref(builder);
     return;
@@ -104,7 +102,7 @@ void open_recent_files(GSimpleAction *action, GVariant *parameter,
 
       // Connect click signal with full filepath as user_data
       g_signal_connect(button, "clicked", G_CALLBACK(on_recent_file_clicked),
-                       g_strdup(filepath));
+                       strdup(filepath));
 
       gtk_box_append(recent_files_box, button);
       g_object_unref(file);
@@ -122,16 +120,13 @@ void open_recent_files(GSimpleAction *action, GVariant *parameter,
     return;
   }
   g_signal_connect(back_button, "clicked", G_CALLBACK(close_recents_window),
-                   recent_win);
+                   app_data->recents->win);
 
   // Show the window
-  gtk_application_add_window(GTK_APPLICATION(app), recent_win);
-  gtk_window_present(recent_win);
+  gtk_application_add_window(GTK_APPLICATION(app_data->app),
+                             app_data->recents->win);
+  gtk_window_present(app_data->recents->win);
 
   // Clean up builder
   g_object_unref(builder);
-}
-
-static void close_recents_window(GtkButton *button, gpointer user_data) {
-  gtk_window_close(recent_win);
 }

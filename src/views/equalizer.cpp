@@ -1,7 +1,7 @@
 #include "glib.h"
 #include "gtk/gtk.h"
-#include "gui.h"
 #include "types.h"
+#include "utils.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -15,7 +15,7 @@ static EqualizerSliderData *bands = NULL;
 gboolean is_equalizer_enabled = false;
 
 void toggle_enable_equalizer(GSimpleAction *action, GVariant *parameter,
-                             GApplication *app) {
+                             AppData *app_data) {
   is_equalizer_enabled = !is_equalizer_enabled;
   for (int i = 0; i < EQUALIZER_BANDS; i++) {
     gtk_widget_set_sensitive(GTK_WIDGET(bands[i].band_scale),
@@ -28,18 +28,18 @@ static void on_scale_value_changed(GtkScale *scale, EqualizerSliderData *data) {
 }
 
 void close_equalizer(GSimpleAction *action, GVariant *parameter,
-                     GApplication *app) {
+                     AppData *app_data) {
   gtk_window_destroy(GTK_WINDOW(equalizer_win));
 }
 
 void open_equalizer(GSimpleAction *action, GVariant *parameter,
-                    GApplication *app) {
-  g_return_if_fail(GTK_IS_APPLICATION(app));
+                    AppData *app_data) {
+  g_return_if_fail(GTK_IS_APPLICATION(app_data->app));
 
   // load UI from resources
-  GtkBuilder *builder = load_builder(EQUALIZER_UI_PATH);
+  GtkBuilder *builder = load_builder("/org/riplay/data/ui/equalizer.ui");
   if (!builder) {
-    g_critical("Failed to load recent files UI");
+    g_critical("Failed to load equalizer UI");
     return;
   }
 
@@ -112,7 +112,7 @@ void open_equalizer(GSimpleAction *action, GVariant *parameter,
   }
 
   // Show the window
-  gtk_application_add_window(GTK_APPLICATION(app), equalizer_win);
+  gtk_application_add_window(GTK_APPLICATION(app_data->app), equalizer_win);
   gtk_window_present(equalizer_win);
 
   // Clean up builder
