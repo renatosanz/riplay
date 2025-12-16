@@ -21,31 +21,27 @@
  *
  * @param app_data Pointer to the AppData structure to clean up
  *
- * @note This function is NULL-safe and will handle partially initialized structures
+ * @note This function is NULL-safe and will handle partially initialized
+ * structures
  * @note After calling this function, the app_data pointer should be set to NULL
  *       by the caller if it won't be used anymore
  */
-void free_global_resources(AppData *app_data)
-{
+void free_global_resources(AppData *app_data) {
   // Early return if NULL pointer passed
-  if (!app_data)
-  {
+  if (!app_data) {
     return;
   }
 
   // Release media stream if it exists
-  if (app_data->media_stream && G_IS_OBJECT(app_data->media_stream))
-  {
+  if (app_data->media_stream && G_IS_OBJECT(app_data->media_stream)) {
     g_object_unref(app_data->media_stream);
     app_data->media_stream = NULL;
   }
 
   // Clean up metadata structure
-  if (app_data->metadata)
-  {
+  if (app_data->metadata) {
     // Free metadata properties if they exist
-    if (app_data->metadata->properties)
-    {
+    if (app_data->metadata->properties) {
       g_free(app_data->metadata->properties);
       app_data->metadata->properties = NULL;
     }
@@ -56,8 +52,7 @@ void free_global_resources(AppData *app_data)
   }
 
   // Free filename string if it exists
-  if (app_data->filename)
-  {
+  if (app_data->filename) {
     g_free(app_data->filename);
     app_data->filename = NULL;
   }

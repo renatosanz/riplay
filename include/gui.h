@@ -2,9 +2,8 @@
 #define GTK_UTILS_H
 #define MIN_IN_SECS 60
 
-
-#include <gtk/gtk.h>
 #include "types.h"
+#include <gtk/gtk.h>
 
 extern guint timeout_id;
 
@@ -25,13 +24,13 @@ void open_recent_files(GSimpleAction *action, GVariant *parameter,
 void open_equalizer(GSimpleAction *action, GVariant *parameter,
                     GApplication *app);
 void toggle_enable_equalizer(GSimpleAction *action, GVariant *parameter,
-                      GApplication *app);
+                             GApplication *app);
 void close_equalizer(GSimpleAction *action, GVariant *parameter,
-                      GApplication *app);
+                     GApplication *app);
 
 // animations
 void draw_stand_by_function(GtkDrawingArea *area, cairo_t *cr, int width,
                             int height, gpointer data);
-static gboolean on_timeout(gpointer user_data);
+// static gboolean on_timeout(gpointer user_data);
 
 #endif

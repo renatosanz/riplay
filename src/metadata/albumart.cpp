@@ -6,7 +6,6 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <metadata.h>
 #include <ostream>
 #include <regex>
 #include <stdexcept> // Para manejo de errores

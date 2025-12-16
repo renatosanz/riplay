@@ -9,10 +9,6 @@
 #include <cstdlib>
 #include <gtk/gtk.h>
 #include <iostream>
-#include <iterator>
-#include <locale>
-#include <memory>
-#include <metadata.h>
 #include <ostream>
 #include <regex>
 #include <stdexcept> // Para manejo de errores
@@ -90,6 +86,17 @@ static void lyrics_worker(GtkMediaStream *stream) {
   }
 }
 
+void stop_lyrics_display() {
+  lyrics_running = false;
+
+  if (lyrics_thread.joinable()) {
+    lyrics_thread.join();
+  }
+
+  current_lyrics.clear();
+  lyrics_label = nullptr;
+}
+
 void start_lyrics_display(const std::vector<LyricBar> &lyrics,
                           GtkMediaStream *stream, GtkLabel *label) {
   stop_lyrics_display();
@@ -103,17 +110,6 @@ void start_lyrics_display(const std::vector<LyricBar> &lyrics,
     lyrics_running = false;
     g_warning("No se pudo crear el hilo de lyrics");
   }
-}
-
-void stop_lyrics_display() {
-  lyrics_running = false;
-
-  if (lyrics_thread.joinable()) {
-    lyrics_thread.join();
-  }
-
-  current_lyrics.clear();
-  lyrics_label = nullptr;
 }
 
 std::variant<bool, std::string> extractLyrics(const char *filePath) {

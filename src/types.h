@@ -1,9 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "glib.h"
 #include "iostream"
 #include <cairo.h>
-#include <gstreamer-1.0/gst/gst.h>
 #include <gtk/gtk.h>
 #include <vector>
 
@@ -37,18 +37,39 @@ typedef struct {
 } LyricProp;
 
 typedef struct {
-  GtkWidget *drawing_area;
+  GtkWindow *win;
+
+  // animations
+  guint timeout_id;
+  GtkDrawingArea *drawing_area;
+} HomeView;
+
+typedef struct {
+  GtkWindow *win;
+  gchar *recent_file_selected;
+} RecentsView;
+
+typedef struct {
+  GtkWindow *win;
   GtkWidget *media_controls;
   GtkWidget *lyrics_label;
-  GtkWindow *win;
+} PlayerView;
+
+typedef struct {
+  GtkApplication *app;
+
+  HomeView *home;
+  RecentsView *recents;
+  PlayerView *player;
+
+  GtkWidget *media_controls;
+  GtkWidget *lyrics_label;
   GtkMediaStream *media_stream;
   float *audio_data;
   int data_size;
-  guint timeout_id;
   char *filename;
   FileMetaData *metadata;
   GMutex data_mutex;
-  GstElement *pipeline;
   std::vector<LyricBar> lyrics;
   std::vector<LyricProp> lyric_props;
 } AppData;
