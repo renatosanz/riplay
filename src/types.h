@@ -3,6 +3,7 @@
 
 #include "glib.h"
 #include "iostream"
+#include "models/models.h"
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <vector>
@@ -58,7 +59,6 @@ typedef struct {
 typedef struct {
   GtkApplication *app;
 
-  HomeView *home;
   RecentsView *recents;
   PlayerView *player;
 
@@ -84,5 +84,7 @@ typedef struct {
   gfloat value;
   gfloat frecuency;
 } EqualizerSliderData;
+
+// instances
 
 #endif

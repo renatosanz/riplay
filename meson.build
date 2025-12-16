@@ -29,14 +29,16 @@ taglib = dependency('taglib_c', required: true)
 
 # all .c files in src_dir to be compiled
 
-subdir('src/graphics')
+# subdir('src/graphics')
 subdir('src/views')
 subdir('src/utils')
-subdir('src/metadata')
-subdir('src/logic')
-
+# subdir('src/metadata')
+# subdir('src/logic')
+subdir('src/models')
+#
 sources = ['src/main.cpp']
-sources += view_sources + utils_sources + graphics_sources + metadata_source + logic_sources
+sources += models_src + view_sources + utils_sources
+#view_sources + utils_sources + graphics_sources + metadata_source + logic_sources
 
 # all blueprint files to gen .xml files (ui)
 blueprint_files = run_command('find', 'data/ui', '-name', '*.blp', check: true).stdout().strip().split('\n')
