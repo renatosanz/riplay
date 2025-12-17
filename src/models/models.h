@@ -3,16 +3,20 @@
 
 #include "glib.h"
 #include "gtk/gtk.h"
+#include "gtkmm/application.h"
+#include "gtkmm/drawingarea.h"
+#include "gtkmm/window.h"
 #include <memory>
 
 // defs
 class AppState;
 class HomeInstance;
+class RecentsInstance;
 
 // state
 class AppState {
 private:
-  GtkApplication *app;
+  Glib::RefPtr<Gtk::Application> app;
   GtkWidget *media_controls;
   GtkWidget *lyrics_label;
   GtkMediaStream *media_stream;
@@ -21,17 +25,20 @@ private:
   char *filename;
   char **argv;
   int argc;
+
   std::unique_ptr<HomeInstance> home;
+  RecentsInstance *recents;
+
   void on_activate();
   static void on_activate_callback(GtkApplication *app, gpointer user_data);
   void load_actions();
   void load_views();
 
 public:
-  AppState(GtkApplication *app, char **argv, int argc);
+  AppState(Glib::RefPtr<Gtk::Application>, char **argv, int argc);
   ~AppState();
   int run();
-  GtkApplication *get_app();
+  Glib::RefPtr<Gtk::Application> get_app();
 
   void set_current_filename(gchar *);
   gchar *get_current_filename();
@@ -40,19 +47,34 @@ public:
 // instances
 class HomeInstance {
 private:
-  AppState *app_state;
-  GtkWindow *win;
-  GtkDrawingArea *drawing_area;
-  guint timeout_id;
+  AppState *state;
+  Glib::RefPtr<Gtk::Window> win;
+  Glib::RefPtr<Gtk::DrawingArea> drawing_area;
+  sigc::connection timeout_id;
   int position;
 
-  void draw_stand_by_function(cairo_t *cr, int width, int height);
-  static gboolean on_timeout(gpointer user_data);
+  void draw_stand_by_function(const std::shared_ptr<Cairo::Context> &cr,
+                              int width, int height);
+  bool on_timeout();
 
 public:
   HomeInstance(AppState *state);
   ~HomeInstance();
-  int show();
+  void show();
+};
+
+class RecentsInstance {
+private:
+  AppState *state;
+  GtkWindow *win;
+  GtkBox *recent_files_box;
+
+public:
+  RecentsInstance(AppState *state);
+  ~RecentsInstance();
+  void show();
+  static void lauch_by_action(GSimpleAction *_action, GVariant *_parameter,
+                              gpointer user_data);
 };
 
 #define MODELS_H

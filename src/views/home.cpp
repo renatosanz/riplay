@@ -9,89 +9,88 @@
  * @param win Pointer to store the created window
  * @return int 0 on success, non-zero on error
  */
+#include "cairomm/context.h"
+#include "gdkmm/rgba.h"
 #include "glib-object.h"
+#include "glibmm/main.h"
+#include "glibmm/refptr.h"
 #include "gtk/gtk.h"
+#include "gtkmm/builder.h"
+#include "gtkmm/drawingarea.h"
+#include "gtkmm/window.h"
 #include "models/models.h"
+#include "sigc++/functors/mem_fun.h"
 #include "utils.h"
+#include <memory>
+#include <sched.h>
 
 HomeInstance::HomeInstance(AppState *state) {
   printf("Creating HomeInstance()...\n");
-  this->app_state = state;
+  this->state = state;
 
-  GtkBuilder *builder = load_builder("/org/riplay/data/ui/home.ui");
+  auto builder = load_builder("/org/riplay/data/ui/home.ui");
   if (!builder) {
+    // error catching
     g_critical("Failed to load home window UI");
+    return;
   }
+  // extrac the builder
 
-  win = GTK_WINDOW(gtk_builder_get_object(builder, "default_window"));
+  win = builder->get_object<Gtk::Window>("default_window");
   // set up standby animation
-  drawing_area =
-      GTK_DRAWING_AREA(gtk_builder_get_object(builder, "spectrum_default"));
-  gtk_drawing_area_set_draw_func(
-      drawing_area,
-      +[](GtkDrawingArea *area, cairo_t *cr, int width, int height,
-          gpointer data) -> void {
-        auto *self = static_cast<HomeInstance *>(data);
-        self->draw_stand_by_function(cr, width, height);
-      },
-      this, // Pass the instance pointer
-      NULL);
+  drawing_area = builder->get_object<Gtk::DrawingArea>("spectrum_default");
+
+  drawing_area->set_draw_func(
+      sigc::mem_fun(*this, &HomeInstance::draw_stand_by_function));
 
   // Start animation timer (32ms interval ≈ 30fps)
-  timeout_id = g_timeout_add(32, on_timeout, this);
-
-  g_object_unref(builder);
+  timeout_id = Glib::signal_timeout().connect(
+      sigc::mem_fun(*this, &HomeInstance::on_timeout), 500);
+  state->get_app()->add_window(*win);
 }
 
-int HomeInstance::show() {
-  gtk_application_add_window(GTK_APPLICATION(app_state->get_app()), win);
-  gtk_window_present(win);
-  return 0;
-}
+void HomeInstance::show() { win->show(); }
 
 HomeInstance::~HomeInstance() {
-  if (timeout_id > 0) {
-    g_source_remove(timeout_id);
+  if (timeout_id.connected()) {
+    timeout_id.disconnect();
   }
 }
 
-gboolean HomeInstance::on_timeout(gpointer user_data) {
-  HomeInstance *self = static_cast<HomeInstance *>(user_data);
+bool HomeInstance::on_timeout() {
 
-  // Update animation position (resets after 500 frames)
-  self->position = (self->position + 1) % 500;
+  // update animation position (resets after 500 frames)
+  this->position = (this->position + 1) % 500;
 
-  // Trigger redraw
-  GtkDrawingArea *area = GTK_DRAWING_AREA(self->drawing_area);
-  gtk_widget_queue_draw(GTK_WIDGET(area));
+  // trigger redraw
+  this->drawing_area->queue_draw();
 
-  return G_SOURCE_CONTINUE;
+  return TRUE;
 }
 
-void HomeInstance::draw_stand_by_function(cairo_t *cr, int width, int height) {
-  GdkRGBA color;
+void HomeInstance::draw_stand_by_function(
+    const std::shared_ptr<Cairo::Context> &cr, int width, int height) {
+  Gdk::RGBA color;
 
-  const float frequency = 1.0f / 10.0f;   // Wave frequency
+  const float frequency = 1.0f / 20.0f;   // Wave frequency
   const float mid_height = height / 2.0f; // Vertical center
 
-  // Set drawing properties
-  cairo_set_source_rgb(cr, 1, 1, 1); // White color
-  cairo_set_line_width(cr, 5);       // Line width
-  cairo_move_to(cr, 0, mid_height);  // Start at left center
+  // set drawing properties
+  cr->set_source_rgb(1, 1, 1);
+  cr->set_line_width(5);
 
-  // Draw sine wave
-  for (int i = 1; i <= width; i++) {
-    float y_offset = 20 * sin((position + i) * frequency);
-    cairo_line_to(cr, i, mid_height + y_offset);
+  // draw sine wave
+  for (int i = 1; i <= width; i += 3) {
+    float y_offset = -20 * sin((position + i) * frequency);
+    cr->line_to(i, mid_height + y_offset);
   }
+  cr->stroke();
 
-  // Render the path
-  cairo_stroke(cr);
-
-  // Fill with widget's background color
-  gtk_widget_get_color(GTK_WIDGET(drawing_area), &color);
-  gdk_cairo_set_source_rgba(cr, &color);
-  cairo_fill(cr);
+  // fill with widget's background color
+  color = drawing_area->get_color();
+  cr->set_source_rgba(color.get_red(), color.get_green(), color.get_blue(),
+                      color.get_alpha());
+  cr->fill();
 }
 
 // int show_home_view(AppData *app_data) {

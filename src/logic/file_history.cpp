@@ -1,6 +1,7 @@
 #include "file_history.h"
 #include <glib/gstdio.h>
-
+#define MAX_HISTORY_ENTRIES 10
+#define HISTORY_FILE "recent_files.ini"
 // returns the path of the config file, in linux equals
 // ~/.config/riplay/recent_files.ini
 static gchar *get_history_path() {

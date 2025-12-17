@@ -1,6 +1,7 @@
 #include "actions.h"
 #include "glib.h"
 #include "gtk/gtk.h"
+#include "gtkmm/application.h"
 #include "home.h"
 #include "models/models.h"
 #include "player.h"
@@ -110,11 +111,8 @@
 // }
 
 int main(int argc, char **argv) {
-  gtk_init();
-
-  AppState *state = new AppState(
-      gtk_application_new("org.riprtx.riplay", G_APPLICATION_HANDLES_OPEN),
-      argv, argc);
+  AppState *state =
+      new AppState(Gtk::Application::create("org.riprtx.riplay"), argv, argc);
 
   return state->run();
 }

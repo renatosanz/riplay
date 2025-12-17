@@ -16,7 +16,7 @@ data_dir = 'data'
 include_dir = include_directories(['src', 'src/utils', 'src/views', 'src/graphics', 'src/logic'])
 
 m = meson.get_compiler('cpp').find_library('m', required: false)
-gtk4 = dependency('gtk4')
+gtk4 = dependency('gtkmm-4.0')
 gnome = import('gnome')
 mpg123_dep = dependency('libmpg123', required: true)
 # gst_dep = dependency('gstreamer-1.0', required: true)
@@ -33,11 +33,11 @@ taglib = dependency('taglib_c', required: true)
 subdir('src/views')
 subdir('src/utils')
 # subdir('src/metadata')
-# subdir('src/logic')
+subdir('src/logic')
 subdir('src/models')
 #
 sources = ['src/main.cpp']
-sources += models_src + view_sources + utils_sources
+sources += models_src + view_sources + utils_sources + logic_sources
 #view_sources + utils_sources + graphics_sources + metadata_source + logic_sources
 
 # all blueprint files to gen .xml files (ui)
