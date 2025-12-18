@@ -25,6 +25,7 @@ typedef struct {
   int track;
   AudioProps *properties;
   unsigned char *raw_albumart;
+  unsigned long raw_albumart_size;
 } FileMetadata;
 
 typedef struct {

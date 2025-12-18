@@ -1,6 +1,8 @@
+#include "metadata.h"
 #include "types.h"
 #include <cstring>
 #include <glib.h>
+#include <memory>
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/id3v2tag.h>
@@ -8,19 +10,16 @@
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
 
-FileMetaData *get_metadata(const char *filename) {
+std::shared_ptr<FileMetadata> extract_metadata_from_path(std::string filename) {
   // Use TagLib's C++ API directly
-  TagLib::FileRef file(filename);
+  TagLib::FileRef file(filename.c_str());
 
   if (file.isNull() || !file.tag()) {
     g_printerr("Error opening file or no tags found\n");
     return nullptr;
   }
 
-  FileMetaData *metadata = g_new0(FileMetaData, 1);
-  if (!metadata) {
-    return nullptr;
-  }
+  auto metadata = std::make_shared<FileMetadata>();
 
   // Get the tag information
   TagLib::Tag *tag = file.tag();
@@ -50,6 +49,9 @@ FileMetaData *get_metadata(const char *filename) {
   }
 
   g_print("title: %s\n", metadata->title);
+
+  metadata->raw_albumart =
+      extractAlbumArt(filename.c_str(), &metadata->raw_albumart_size);
 
   return metadata;
 }

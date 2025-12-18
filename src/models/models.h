@@ -2,10 +2,13 @@
 #define MODELS_H
 
 #include "glib.h"
+#include "glibmm/refptr.h"
 #include "gtk/gtk.h"
 #include "gtkmm/application.h"
 #include "gtkmm/drawingarea.h"
 #include "gtkmm/label.h"
+#include "gtkmm/mediacontrols.h"
+#include "gtkmm/mediastream.h"
 #include "gtkmm/widget.h"
 #include "gtkmm/window.h"
 #include "types.h"
@@ -63,6 +66,7 @@ private:
 public:
   SongInstance(std::string filepath);
   std::string get_filepath();
+  std::shared_ptr<FileMetadata> get_metadata();
   // ~SongInstance();
 };
 
@@ -104,13 +108,20 @@ class PlayerInstance {
 private:
   AppState *state;
   Glib::RefPtr<Gtk::Window> win;
-  Glib::RefPtr<Gtk::Label> title;
+  Glib::RefPtr<Gtk::Label> title_label;
+  Glib::RefPtr<Gtk::MediaStream> media_stream;
+  Glib::RefPtr<Gtk::MediaControls> media_controls;
+  std::string artis_label_format;
+  std::string properties_format;
+
+  std::shared_ptr<FileMetadata> metadata;
 
 public:
   PlayerInstance(AppState *state);
   ~PlayerInstance();
   void show();
   void load_song();
+  void close();
   bool lauch_by_action();
 };
 

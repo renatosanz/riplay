@@ -89,6 +89,7 @@ void AppState::load_actions() {
 
 void AppState::open_player(Glib::ustring filepath) {
   recents->close();
+  player->close();
   home->close();
   this->current_song = std::make_shared<SongInstance>(filepath);
   player->show();

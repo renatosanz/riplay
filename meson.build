@@ -32,12 +32,12 @@ taglib = dependency('taglib_c', required: true)
 # subdir('src/graphics')
 subdir('src/views')
 subdir('src/utils')
-# subdir('src/metadata')
+subdir('src/metadata')
 subdir('src/logic')
 subdir('src/models')
 #
 sources = ['src/main.cpp']
-sources += models_src + view_sources + utils_sources + logic_sources
+sources += models_src + view_sources + utils_sources + logic_sources + metadata_source
 #view_sources + utils_sources + graphics_sources + metadata_source + logic_sources
 
 # all blueprint files to gen .xml files (ui)

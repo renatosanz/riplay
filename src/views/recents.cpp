@@ -1,10 +1,3 @@
-/**
- * @file recents.c
- * @brief Recent files management and UI
- *
- * This module handles the display and interaction with recently opened files.
- */
-
 #include "file_history.h"
 #include "gio/gio.h"
 #include "giomm/file.h"
@@ -60,8 +53,6 @@ void RecentsInstance::show(const Glib::VariantBase &parameter) {
       button->set_tooltip_text(filepath);
 
       recent_files_box->append(*button);
-      // how can i pass the filepath to the open_player(std::string filepath)
-      // function
       button->signal_clicked().connect(
           sigc::bind(sigc::mem_fun(*state, &AppState::open_player), filepath));
     }

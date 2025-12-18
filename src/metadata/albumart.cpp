@@ -1,15 +1,7 @@
 #include "glib/gprintf.h"
 #include "glibconfig.h"
 #include "tstringlist.h"
-#include "types.h"
 #include <cstdlib>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <ostream>
-#include <regex>
-#include <stdexcept> // Para manejo de errores
-#include <string>
 #include <taglib/attachedpictureframe.h>
 #include <taglib/fileref.h>
 #include <taglib/flacfile.h>
@@ -21,8 +13,6 @@
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
 #include <taglib/unsynchronizedlyricsframe.h>
-#include <variant>
-#include <vector>
 #include <xiphcomment.h>
 
 unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {

@@ -1,12 +1,16 @@
 #include "player.h"
 #include "actions.h"
+#include "gdkmm/pixbuf.h"
+#include "gdkmm/texture.h"
 #include "gio/gio.h"
 #include "glib-object.h"
 #include "glib.h"
-#include "gtk/gtk.h"
-#include "gtk/gtkshortcut.h"
+#include "gtkmm.h"
 #include "gtkmm/label.h"
-#include "include/metadata.h"
+#include "gtkmm/mediacontrols.h"
+#include "gtkmm/mediafile.h"
+#include "gtkmm/object.h"
+#include "gtkmm/picture.h"
 #include "models/models.h"
 #include "mpegfile.h"
 #include "pango/pango-layout.h"
@@ -21,16 +25,64 @@
 
 PlayerInstance::PlayerInstance(AppState *state) {
   this->state = state;
+  artis_label_format = "%s - %s"; // format for artist - album label
+  properties_format =
+      " %d kbps - %d sec (%d:%02d) - %d Hz"; // format year label
   return;
 }
 
 PlayerInstance::~PlayerInstance() {}
 
+void PlayerInstance::close() {
+  if (win && media_stream) {
+    media_stream->set_playing(false);
+    win->close();
+  }
+}
+
 void PlayerInstance::show() {
   auto builder = load_builder(PLAYER_UI_PATH);
+  metadata = state->get_song()->get_metadata();
+
+  // media_stream & media_controls
+  media_stream =
+      Gtk::MediaFile::create_for_filename(state->get_song()->get_filepath());
+  media_stream->set_playing(true);
+  media_controls = builder->get_object<Gtk::MediaControls>("audio_controls");
+  media_controls->set_media_stream(media_stream);
+
+  title_label = builder->get_object<Gtk::Label>("title_label");
+  title_label->set_text(metadata->title);
+  auto properties_label = builder->get_object<Gtk::Label>("year_label");
+  properties_label->set_text(
+      Glib::ustring::sprintf(properties_format, metadata->properties->bitrate,
+                             metadata->properties->length,
+                             (int)metadata->properties->length / MIN_IN_SECS,
+                             (int)metadata->properties->length % MIN_IN_SECS,
+                             metadata->properties->samplerate));
+  auto artist_album_label =
+      builder->get_object<Gtk::Label>("artist_album_label");
+  artist_album_label->set_text(Glib::ustring::sprintf(
+      artis_label_format, metadata->artist, metadata->album));
+
+  auto albumart_content = builder->get_object<Gtk::Box>("album_lyrics_cont");
+
+  if (metadata->raw_albumart) {
+    auto loader = Gdk::PixbufLoader::create();
+    loader->write(metadata->raw_albumart, metadata->raw_albumart_size);
+    loader->close();
+    auto pixbuf = loader->get_pixbuf();
+    auto texture = Gdk::Texture::create_for_pixbuf(pixbuf);
+
+    auto image = Gtk::make_managed<Gtk::Picture>(texture);
+    image->set_vexpand(true);
+    image->set_hexpand(true);
+    albumart_content->append(*image);
+  }
+
+  // ui stuff
   win = builder->get_object<Gtk::Window>("player_window");
-  title = builder->get_object<Gtk::Label>("title_label");
-  title->set_text(this->state->get_song()->get_filepath());
+
   state->get_app()->add_window(*win);
   win->show();
 }
