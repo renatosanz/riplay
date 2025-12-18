@@ -4,7 +4,7 @@ Window player_window{
   title:"riplay";
   resizable:false;
   default-width:532;
-  default-height:400;
+  default-height:532;
 
   [titlebar]
   HeaderBar {
@@ -47,22 +47,56 @@ Window player_window{
       Box playing_view{
         spacing:3;
         orientation:vertical;
+
         Label title_label{
           label:"Title";
+          margin-bottom:8;
+          vexpand:true;
           css-classes:["title-1"];
-          hexpand:true;
         }
+
         Label artist_album_label {
           label:"Artist - Album";
           css-classes:["dim-label"];
+          margin-bottom:6;
           hexpand:true;
         }
+
         Label year_label{
           label:"2000";
           css-classes:["dim-label"];
+          margin-bottom:6;
           hexpand:true;
         }
-        
+        Box tools_cont{
+          margin-bottom:8;
+          spacing:8;
+          hexpand:true;
+          halign:center;
+
+          Button open_new_file{
+            margin-end:15;
+            icon-name:"audio-x-generic-symbolic";
+            can-shrink:true;
+            tooltip-text:"Open new song";
+          }
+          Button equalizer_btn{
+            icon-name:"multimedia-equalizer-symbolic";
+            can-shrink:true;
+            tooltip-text:"Open equalizer";
+          }
+          Button volume_btn{
+            icon-name:"org.gnome.Settings-sound-symbolic";
+            tooltip-text:"Mute/Unmute";
+          }
+          Button more_info_btn{
+            margin-start:15;
+            icon-name:"info-outline-symbolic";
+            can-shrink:true;
+            css-classes:["circular"];
+            tooltip-text:"View metadata";
+          }
+        }
         Box album_lyrics_cont{
           
         }

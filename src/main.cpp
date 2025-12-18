@@ -1,13 +1,5 @@
-#include "actions.h"
-#include "glib.h"
-#include "gtk/gtk.h"
 #include "gtkmm/application.h"
-#include "home.h"
 #include "models/models.h"
-#include "player.h"
-#include "types.h"
-#include "utils.h"
-#include <cstdio>
 #include <metadata/metadata.h>
 
 // static int on_playing(AppData *app_data) {
