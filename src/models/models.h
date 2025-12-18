@@ -5,8 +5,10 @@
 #include "gtk/gtk.h"
 #include "gtkmm/application.h"
 #include "gtkmm/drawingarea.h"
+#include "gtkmm/label.h"
 #include "gtkmm/widget.h"
 #include "gtkmm/window.h"
+#include "types.h"
 #include <gtkmm/box.h>
 #include <memory>
 
@@ -14,6 +16,8 @@
 class AppState;
 class HomeInstance;
 class RecentsInstance;
+class PlayerInstance;
+class SongInstance;
 
 // state
 class AppState {
@@ -28,9 +32,11 @@ private:
   char **argv;
   int argc;
 
+  std::shared_ptr<SongInstance> current_song;
+
   std::unique_ptr<HomeInstance> home;
   std::unique_ptr<RecentsInstance> recents;
-  // std::unique_ptr<PlayerInstance> player;
+  std::unique_ptr<PlayerInstance> player;
 
   void on_activate();
   void load_actions();
@@ -41,10 +47,23 @@ public:
   ~AppState();
   int run();
   Glib::RefPtr<Gtk::Application> get_app();
-  int open_player(Glib::ustring filepath);
+  std::shared_ptr<SongInstance> get_song();
+  void open_player(Glib::ustring filepath);
 
   void set_current_filename(gchar *);
   gchar *get_current_filename();
+};
+
+class SongInstance {
+
+private:
+  std::string filepath;
+  std::shared_ptr<FileMetadata> metadata;
+
+public:
+  SongInstance(std::string filepath);
+  std::string get_filepath();
+  // ~SongInstance();
 };
 
 // instances
@@ -64,6 +83,7 @@ public:
   HomeInstance(AppState *state);
   ~HomeInstance();
   void show();
+  void close();
 };
 
 class RecentsInstance {
@@ -76,6 +96,21 @@ public:
   RecentsInstance(AppState *state);
   ~RecentsInstance();
   void show(const Glib::VariantBase &parameter);
+  void close();
+  bool lauch_by_action();
+};
+
+class PlayerInstance {
+private:
+  AppState *state;
+  Glib::RefPtr<Gtk::Window> win;
+  Glib::RefPtr<Gtk::Label> title;
+
+public:
+  PlayerInstance(AppState *state);
+  ~PlayerInstance();
+  void show();
+  void load_song();
   bool lauch_by_action();
 };
 

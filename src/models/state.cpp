@@ -1,11 +1,10 @@
-#include "giomm/action.h"
-#include "giomm/actionmap.h"
 #include "giomm/simpleaction.h"
 #include "glibmm/refptr.h"
 #include "glibmm/ustring.h"
 #include "gtkmm/application.h"
 #include "models/models.h"
 #include "sigc++/functors/mem_fun.h"
+#include "types.h"
 #include <memory>
 
 AppState::AppState(Glib::RefPtr<Gtk::Application> app, char **argv, int argc) {
@@ -36,15 +35,16 @@ void AppState::load_views() {
   printf("Loading view load_views()...\n");
   home = std::make_unique<HomeInstance>(this);
   recents = std::make_unique<RecentsInstance>(this);
+  player = std::make_unique<PlayerInstance>(this);
 }
 
 Glib::RefPtr<Gtk::Application> AppState::get_app() { return app; };
 
+std::shared_ptr<SongInstance> AppState::get_song() { return current_song; };
+
 void AppState::load_actions() {
   printf("Loading actions load_actions()...\n");
-  // // Create action for opening recent files
-  // GSimpleAction *recents_action_obj = g_simple_action_new("open-recents",
-  // NULL);
+  // Create action for opening recent files
   auto recents_action_obj = Gio::SimpleAction::create("open-recents");
   recents_action_obj->signal_activate().connect(
       sigc::mem_fun(*recents, &RecentsInstance::show));
@@ -87,7 +87,12 @@ void AppState::load_actions() {
   // g_action_map_add_action(action_map, G_ACTION(close_equalizer_action_obj));
 }
 
-int AppState::open_player(Glib::ustring filepath) {}
+void AppState::open_player(Glib::ustring filepath) {
+  recents->close();
+  home->close();
+  this->current_song = std::make_shared<SongInstance>(filepath);
+  player->show();
+}
 
 int AppState::run() { return app->run(); }
 void AppState::set_current_filename(gchar *f) { filename = f; }

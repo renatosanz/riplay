@@ -15,17 +15,10 @@ HomeInstance::HomeInstance(AppState *state) {
   this->state = state;
 
   auto builder = load_builder("/org/riplay/data/ui/home.ui");
-  if (!builder) {
-    // error catching
-    g_critical("Failed to load home window UI");
-    return;
-  }
-  // extrac the builder
-
   win = builder->get_object<Gtk::Window>("default_window");
+
   // set up standby animation
   drawing_area = builder->get_object<Gtk::DrawingArea>("spectrum_default");
-
   drawing_area->set_draw_func(
       sigc::mem_fun(*this, &HomeInstance::draw_stand_by_function));
 
@@ -36,6 +29,8 @@ HomeInstance::HomeInstance(AppState *state) {
 }
 
 void HomeInstance::show() { win->show(); }
+
+void HomeInstance::close() { win->close(); }
 
 HomeInstance::~HomeInstance() {
   if (timeout_id.connected()) {

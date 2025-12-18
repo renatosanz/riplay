@@ -4,7 +4,7 @@
 #include "types.h"
 #include "variant"
 
-FileMetaData *get_metadata(const char *filename);
+FileMetadata *get_metadata(const char *filename);
 unsigned char *extractAlbumArt(const char *filePath, unsigned long *size);
 unsigned char *extract_album_art(const char *filepath, unsigned long *size);
 void start_lyrics_display(const std::vector<LyricBar> &lyrics,

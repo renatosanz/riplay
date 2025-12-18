@@ -3,7 +3,6 @@
 
 #include "glib.h"
 #include "iostream"
-#include "models/models.h"
 #include <cairo.h>
 #include <gtk/gtk.h>
 #include <vector>
@@ -25,7 +24,8 @@ typedef struct {
   int year;
   int track;
   AudioProps *properties;
-} FileMetaData;
+  unsigned char *raw_albumart;
+} FileMetadata;
 
 typedef struct {
   guint64 timestamp;
@@ -68,7 +68,7 @@ typedef struct {
   float *audio_data;
   int data_size;
   char *filename;
-  FileMetaData *metadata;
+  FileMetadata *metadata;
   GMutex data_mutex;
   std::vector<LyricBar> lyrics;
   std::vector<LyricProp> lyric_props;

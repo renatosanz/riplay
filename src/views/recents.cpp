@@ -18,6 +18,8 @@
 #include "gtkmm/window.h"
 #include "models/models.h"
 #include "player.h"
+#include "sigc++/adaptors/bind.h"
+#include "sigc++/functors/mem_fun.h"
 #include "types.h"
 #include "utils.h"
 #include <cstdio>
@@ -43,6 +45,8 @@ void RecentsInstance::show(const Glib::VariantBase &parameter) {
   win = builder->get_object<Gtk::Window>("recents");
   recent_files_box = builder->get_object<Gtk::Box>("recent_files_box");
   auto back_button = builder->get_object<Gtk::Button>("back_btn");
+  back_button->signal_clicked().connect(
+      sigc::mem_fun(*this, &RecentsInstance::close));
 
   auto recent_files = get_recent_files_list(MAX_RECENT_FILES);
   if (recent_files.empty()) {
@@ -56,9 +60,10 @@ void RecentsInstance::show(const Glib::VariantBase &parameter) {
       button->set_tooltip_text(filepath);
 
       recent_files_box->append(*button);
-      // Connect click signal with full filepath as user_data
-      // g_signal_connect(button, "clicked", G_CALLBACK(on_recent_file_clicked),
-      //                  strdup(filepath));
+      // how can i pass the filepath to the open_player(std::string filepath)
+      // function
+      button->signal_clicked().connect(
+          sigc::bind(sigc::mem_fun(*state, &AppState::open_player), filepath));
     }
   }
 
@@ -67,9 +72,7 @@ void RecentsInstance::show(const Glib::VariantBase &parameter) {
 }
 
 //
-// static void close_recents_window(GtkButton *_button, GtkWindow *win) {
-//   gtk_window_close(win);
-// }
+void RecentsInstance::close() { win->close(); }
 //
 // /**
 //  * @brief Callback for when a recent file is selected
