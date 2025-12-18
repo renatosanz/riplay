@@ -85,9 +85,7 @@ void PlayerInstance::show() {
   win = builder->get_object<Gtk::Window>("player_window");
   win->signal_close_request().connect(
       [this]() {
-        std::cout << "Window is closing!" << std::endl;
         close();
-        state->quit();
         return false;
       },
       false);

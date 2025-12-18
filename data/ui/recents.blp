@@ -16,29 +16,33 @@ Window recents{
     orientation: vertical;
 
     Box{
-      Button reset_history_btn{
-        label:"Reset";
-        css-classes:["destructive-action"];
-      }
-      Box{
+      hexpand:true;
+      Label {
         hexpand:true;
-        Label {
-          hexpand:true;
-          label:"Recent Files";
-        }
-      }
-      Button back_btn{
-        label:"Cancel";
-        css-classes:["circular"];
+        label:"Recent Files";
       }
     }
-   
+
     ScrolledWindow{
       Box recent_files_box{
         orientation: vertical;
         spacing:2;
         hexpand:true;
         vexpand:true;
+      }
+    }
+
+    Box{
+      spacing:12;
+
+      Button reset_history_btn{
+        label:"Reset";
+        css-classes:["destructive-action"];
+      }
+      
+      Button back_btn{
+        label:"Cancel";
+        css-classes:["circular"];
       }
     }
   }
