@@ -7,8 +7,15 @@
 
 #include "file_history.h"
 #include "gio/gio.h"
+#include "giomm/file.h"
 #include "glib.h"
+#include "glibmm/refptr.h"
 #include "gtk/gtk.h"
+#include "gtkmm/button.h"
+#include "gtkmm/label.h"
+#include "gtkmm/object.h"
+#include "gtkmm/widget.h"
+#include "gtkmm/window.h"
 #include "models/models.h"
 #include "player.h"
 #include "types.h"
@@ -23,73 +30,40 @@
 RecentsInstance::RecentsInstance(AppState *state) {
   printf("Creating RecentsInstance()...");
   this->state = state;
+
+  // g_signal_connect(back_button, "clicked", G_CALLBACK(close_recents_window),
+  //                  this);
 }
 
 RecentsInstance::~RecentsInstance() {}
 
-void RecentsInstance::lauch_by_action(GSimpleAction *_action,
-                                      GVariant *_parameter,
-                                      gpointer user_data) {
-  RecentsInstance *self = static_cast<RecentsInstance *>(user_data);
-  self->show();
-}
+void RecentsInstance::show(const Glib::VariantBase &parameter) {
+  auto builder = load_builder(RECENTS_UI_PATH);
 
-void RecentsInstance::show() {
+  win = builder->get_object<Gtk::Window>("recents");
+  recent_files_box = builder->get_object<Gtk::Box>("recent_files_box");
+  auto back_button = builder->get_object<Gtk::Button>("back_btn");
 
-  // Get recent files from history
-  GtkBuilder *builder = load_builder(RECENTS_UI_PATH);
-  if (!builder) {
-    g_critical("Failed to load recent files UI");
-    return;
-  }
-  win = GTK_WINDOW(gtk_builder_get_object(builder, "recents"));
-  recent_files_box =
-      GTK_BOX(gtk_builder_get_object(builder, "recent_files_box"));
-
-  GtkButton *back_button =
-      GTK_BUTTON(gtk_builder_get_object(builder, "back_btn"));
-  // g_signal_connect(back_button, "clicked", G_CALLBACK(close_recents_window),
-  //                  this);
-  GList *recent_files = get_recent_files_list(MAX_RECENT_FILES);
-  if (!recent_files) {
-    // Add "No recent files" label if empty
-    GtkWidget *label = gtk_label_new("No recent files");
-    gtk_box_append(recent_files_box, label);
+  auto recent_files = get_recent_files_list(MAX_RECENT_FILES);
+  if (recent_files.empty()) {
+    // add "no recent files" label if empty
+    auto label = Gtk::make_managed<Gtk::Label>("No recent files");
+    recent_files_box->append(*label);
   } else {
-    // Add buttons for each recent file
-    GList *iter = recent_files;
-    for (int i = 0; iter != NULL && i < MAX_RECENT_FILES;
-         i++, iter = iter->next) {
-      const gchar *filepath = (const gchar *)iter->data;
+    for (auto filepath : recent_files) {
+      auto file = Gio::File::create_for_path(filepath);
+      auto button = Gtk::make_managed<Gtk::Button>(file->get_basename());
+      button->set_tooltip_text(filepath);
 
-      if (!g_file_query_exists(g_file_new_for_path(filepath), NULL)) {
-        continue;
-      }
-
-      GFile *file = g_file_new_for_path(filepath);
-
-      // Create button with filename (without path)
-      GtkWidget *button = gtk_button_new_with_label(g_file_get_basename(file));
-      gtk_widget_set_tooltip_text(button, filepath);
-
+      recent_files_box->append(*button);
       // Connect click signal with full filepath as user_data
       // g_signal_connect(button, "clicked", G_CALLBACK(on_recent_file_clicked),
       //                  strdup(filepath));
-
-      gtk_box_append(recent_files_box, button);
-      g_object_unref(file);
     }
-
-    // Free the list (but not the strings - they're used as button data)
-    g_list_free(recent_files);
   }
 
-  // Clean up builder
-  g_object_unref(builder);
-
-  gtk_application_add_window(GTK_APPLICATION(state->get_app()), win);
-  // Show the window
-  gtk_window_present(win);
+  state->get_app()->add_window(*win);
+  win->show();
 }
 
 //

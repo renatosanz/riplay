@@ -3,6 +3,6 @@ view_sources = files(
   # 'equalizer.cpp',
   'home.cpp',
   # 'player.cpp',
-  # 'recents.cpp',
+  'recents.cpp',
   # 'visuals.cpp',
 )

@@ -1,8 +1,13 @@
+#include "giomm/action.h"
+#include "giomm/actionmap.h"
+#include "giomm/simpleaction.h"
 #include "glibmm/refptr.h"
+#include "glibmm/ustring.h"
 #include "gtkmm/application.h"
 #include "models/models.h"
 #include "sigc++/functors/mem_fun.h"
 #include <memory>
+
 AppState::AppState(Glib::RefPtr<Gtk::Application> app, char **argv, int argc) {
   this->app = app;
   this->argv = argv;
@@ -19,15 +24,10 @@ AppState::AppState(Glib::RefPtr<Gtk::Application> app, char **argv, int argc) {
 
 AppState::~AppState() { printf("Clean up and closing ~AppState()...\n"); }
 
-void AppState::on_activate_callback(GtkApplication *app, gpointer user_data) {
-  AppState *self = static_cast<AppState *>(user_data);
-  self->on_activate();
-}
-
 void AppState::on_activate() {
   printf("Starting app on_activate()...\n");
   load_views();
-  // load_actions();
+  load_actions();
   // open home on default start
   home->show();
 }
@@ -35,16 +35,20 @@ void AppState::on_activate() {
 void AppState::load_views() {
   printf("Loading view load_views()...\n");
   home = std::make_unique<HomeInstance>(this);
-  // recents = new RecentsInstance(this);
+  recents = std::make_unique<RecentsInstance>(this);
 }
 
 Glib::RefPtr<Gtk::Application> AppState::get_app() { return app; };
 
 void AppState::load_actions() {
-  // printf("Loading actions load_actions()...\n");
+  printf("Loading actions load_actions()...\n");
   // // Create action for opening recent files
   // GSimpleAction *recents_action_obj = g_simple_action_new("open-recents",
   // NULL);
+  auto recents_action_obj = Gio::SimpleAction::create("open-recents");
+  recents_action_obj->signal_activate().connect(
+      sigc::mem_fun(*recents, &RecentsInstance::show));
+  app->add_action(recents_action_obj);
   // // Create action for changing visual effects
   // GSimpleAction *visuals_action_obj =
   //     g_simple_action_new("change-visuals", NULL);
@@ -70,7 +74,7 @@ void AppState::load_actions() {
   // //                  G_CALLBACK(open_equalizer), app_data);
   // // g_signal_connect(enable_equalizer_action_obj, "activate",
   // //                  G_CALLBACK(toggle_enable_equalizer), app_data);
-  // // g_signal_connect(close_equalizer_action_obj, "activate",
+  // // g_signal_connect(close_equalizer"activate",
   // //                  G_CALLBACK(close_equalizer), app_data);
   //
   // // Add actions to the application's action map
@@ -82,6 +86,8 @@ void AppState::load_actions() {
   // g_action_map_add_action(action_map, G_ACTION(enable_equalizer_action_obj));
   // g_action_map_add_action(action_map, G_ACTION(close_equalizer_action_obj));
 }
+
+int AppState::open_player(Glib::ustring filepath) {}
 
 int AppState::run() { return app->run(); }
 void AppState::set_current_filename(gchar *f) { filename = f; }

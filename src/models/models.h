@@ -5,7 +5,9 @@
 #include "gtk/gtk.h"
 #include "gtkmm/application.h"
 #include "gtkmm/drawingarea.h"
+#include "gtkmm/widget.h"
 #include "gtkmm/window.h"
+#include <gtkmm/box.h>
 #include <memory>
 
 // defs
@@ -27,10 +29,10 @@ private:
   int argc;
 
   std::unique_ptr<HomeInstance> home;
-  RecentsInstance *recents;
+  std::unique_ptr<RecentsInstance> recents;
+  // std::unique_ptr<PlayerInstance> player;
 
   void on_activate();
-  static void on_activate_callback(GtkApplication *app, gpointer user_data);
   void load_actions();
   void load_views();
 
@@ -39,6 +41,7 @@ public:
   ~AppState();
   int run();
   Glib::RefPtr<Gtk::Application> get_app();
+  int open_player(Glib::ustring filepath);
 
   void set_current_filename(gchar *);
   gchar *get_current_filename();
@@ -66,15 +69,14 @@ public:
 class RecentsInstance {
 private:
   AppState *state;
-  GtkWindow *win;
-  GtkBox *recent_files_box;
+  Glib::RefPtr<Gtk::Window> win;
+  Glib::RefPtr<Gtk::Box> recent_files_box;
 
 public:
   RecentsInstance(AppState *state);
   ~RecentsInstance();
-  void show();
-  static void lauch_by_action(GSimpleAction *_action, GVariant *_parameter,
-                              gpointer user_data);
+  void show(const Glib::VariantBase &parameter);
+  bool lauch_by_action();
 };
 
 #define MODELS_H

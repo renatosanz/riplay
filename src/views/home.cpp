@@ -1,21 +1,7 @@
-/**
- * @brief Loads and displays the home window
- *
- * Creates the application's home window where users can open recent files
- * or select new ones. Initializes a standby animation.
- *
- * @param app The GApplication instance
- * @param spectrum Pointer to store the spectrum drawing area
- * @param win Pointer to store the created window
- * @return int 0 on success, non-zero on error
- */
 #include "cairomm/context.h"
 #include "gdkmm/rgba.h"
-#include "glib-object.h"
 #include "glibmm/main.h"
 #include "glibmm/refptr.h"
-#include "gtk/gtk.h"
-#include "gtkmm/builder.h"
 #include "gtkmm/drawingarea.h"
 #include "gtkmm/window.h"
 #include "models/models.h"
@@ -93,46 +79,6 @@ void HomeInstance::draw_stand_by_function(
   cr->fill();
 }
 
-// int show_home_view(AppData *app_data) {
-//   g_return_val_if_fail(app_data->app != NULL && app_data != NULL, -1);
-//
-//   // load ui from resources
-//   GtkBuilder *builder = load_builder("/org/riplay/data/ui/home.ui");
-//   if (!builder) {
-//     g_critical("Failed to load home window UI");
-//     return -1;
-//   }
-//
-//   // get window from builder
-//   app_data->home->win =
-//       GTK_WINDOW(gtk_builder_get_object(builder, "default_window"));
-//   if (!app_data->home->win) {
-//     g_critical("Failed to get home window from builder");
-//     g_object_unref(builder);
-//     return -1;
-//   }
-//
-//   // set up standby animation
-//   app_data->home->drawing_area =
-//       GTK_DRAWING_AREA(gtk_builder_get_object(builder, "spectrum_default"));
-//   gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(app_data->home->drawing_area),
-//                                  draw_stand_by_function, NULL, NULL);
-//
-//   // Start animation timer (32ms interval ≈ 30fps)
-//   app_data->home->timeout_id =
-//       g_timeout_add(32, on_timeout, app_data->home->drawing_area);
-//
-//   // clean up builder
-//   g_object_unref(builder);
-//
-//   // display window
-//   gtk_application_add_window(GTK_APPLICATION(app_data->app),
-//                              app_data->home->win);
-//   gtk_window_present(app_data->home->win);
-//
-//   return 0;
-// }
-//
 // void file_dialog_response(GObject *source_object, GAsyncResult *result,
 //                           AppData *app_data) {
 //   GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
