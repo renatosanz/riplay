@@ -102,9 +102,8 @@
 //   return EXIT_SUCCESS;
 // }
 
-int main(int argc, char **argv) {
-  AppState *state =
-      new AppState(Gtk::Application::create("org.riprtx.riplay"), argv, argc);
+int main(int argc, char *argv[]) {
+  AppState *state = new AppState(argv, argc);
 
-  return state->run();
+  return state->run(argc, argv);
 }

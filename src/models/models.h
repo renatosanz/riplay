@@ -23,9 +23,8 @@ class PlayerInstance;
 class SongInstance;
 
 // state
-class AppState {
+class AppState : public Gtk::Application {
 private:
-  Glib::RefPtr<Gtk::Application> app;
   GtkWidget *media_controls;
   GtkWidget *lyrics_label;
   GtkMediaStream *media_stream;
@@ -34,6 +33,7 @@ private:
   char *filename;
   char **argv;
   int argc;
+  bool files_were_opened = false;
 
   std::shared_ptr<SongInstance> current_song;
 
@@ -41,15 +41,17 @@ private:
   std::unique_ptr<RecentsInstance> recents;
   std::unique_ptr<PlayerInstance> player;
 
-  void on_activate();
   void load_actions();
   void load_views();
 
+protected:
+  void on_open(const Gio::Application::type_vec_files &files,
+               const Glib::ustring &hint) override;
+  void on_activate() override;
+
 public:
-  AppState(Glib::RefPtr<Gtk::Application>, char **argv, int argc);
+  AppState(char **argv, int argc);
   ~AppState();
-  int run();
-  Glib::RefPtr<Gtk::Application> get_app();
   std::shared_ptr<SongInstance> get_song();
   void open_player(Glib::ustring filepath);
 

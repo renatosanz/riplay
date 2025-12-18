@@ -23,7 +23,7 @@
 #define RECENTS_UI_PATH "/org/riplay/data/ui/recents.ui"
 
 RecentsInstance::RecentsInstance(AppState *state) {
-  printf("Creating RecentsInstance()...");
+  printf("Creating RecentsInstance()...\n");
   this->state = state;
 
   // g_signal_connect(back_button, "clicked", G_CALLBACK(close_recents_window),
@@ -58,12 +58,16 @@ void RecentsInstance::show(const Glib::VariantBase &parameter) {
     }
   }
 
-  state->get_app()->add_window(*win);
+  state->add_window(*win);
   win->show();
 }
 
 //
-void RecentsInstance::close() { win->close(); }
+void RecentsInstance::close() {
+  if (win) {
+    win->close();
+  }
+}
 //
 // /**
 //  * @brief Callback for when a recent file is selected

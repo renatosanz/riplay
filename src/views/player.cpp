@@ -14,6 +14,7 @@
 #include "models/models.h"
 #include "mpegfile.h"
 #include "pango/pango-layout.h"
+#include "sigc++/functors/mem_fun.h"
 #include "types.h"
 #include "utils.h"
 #include <glycin-2/glycin.h>
@@ -82,8 +83,16 @@ void PlayerInstance::show() {
 
   // ui stuff
   win = builder->get_object<Gtk::Window>("player_window");
+  win->signal_close_request().connect(
+      [this]() {
+        std::cout << "Window is closing!" << std::endl;
+        close();
+        state->quit();
+        return false;
+      },
+      false);
 
-  state->get_app()->add_window(*win);
+  state->add_window(*win);
   win->show();
 }
 

@@ -5,30 +5,42 @@
 #include "models/models.h"
 #include "sigc++/functors/mem_fun.h"
 #include "types.h"
+#include <iostream>
 #include <memory>
 
-AppState::AppState(Glib::RefPtr<Gtk::Application> app, char **argv, int argc) {
-  this->app = app;
-  this->argv = argv;
-  this->argc = argc;
-  if (argc == 2) {
-    set_current_filename(g_strdup(argv[1]));
-    g_print("Opening file: %s\n", get_current_filename());
-  }
-
-  app->signal_activate().connect(sigc::mem_fun(*this, &AppState::on_activate));
-  // g_signal_connect(app, "open", G_CALLBACK(on_open_file), NULL);
-  // g_signal_connect(app, "shutdown", G_CALLBACK(on_shutdown), NULL);
-}
+AppState::AppState(char **argv, int argc)
+    : Gtk::Application("org.riprtx.riplay",
+                       Gio::Application::Flags::HANDLES_OPEN),
+      argv(argv), argc(argc) {}
 
 AppState::~AppState() { printf("Clean up and closing ~AppState()...\n"); }
 
-void AppState::on_activate() {
-  printf("Starting app on_activate()...\n");
+void AppState::on_open(const Gio::Application::type_vec_files &files,
+                       const Glib::ustring &hint) {
+  printf("Starting app on_open()...\n");
   load_views();
   load_actions();
-  // open home on default start
-  home->show();
+
+  if (argc >= 2 && files.size() >= 1) {
+    std::string path = files[0]->get_path();
+    std::cout << "Opening single file: " << path << std::endl;
+    open_player(path);
+  } else {
+    for (const auto &file : files) {
+      std::cout << "Opening: " << file->get_path() << std::endl;
+      // Handle multiple files
+    }
+  }
+}
+
+void AppState::on_activate() {
+  printf("Starting app on_activate()...\n");
+  if (argc == 1) {
+    std::cout << "Activate: No files provided, showing home\n";
+    load_views();
+    load_actions();
+    home->show();
+  }
 }
 
 void AppState::load_views() {
@@ -38,8 +50,6 @@ void AppState::load_views() {
   player = std::make_unique<PlayerInstance>(this);
 }
 
-Glib::RefPtr<Gtk::Application> AppState::get_app() { return app; };
-
 std::shared_ptr<SongInstance> AppState::get_song() { return current_song; };
 
 void AppState::load_actions() {
@@ -48,7 +58,7 @@ void AppState::load_actions() {
   auto recents_action_obj = Gio::SimpleAction::create("open-recents");
   recents_action_obj->signal_activate().connect(
       sigc::mem_fun(*recents, &RecentsInstance::show));
-  app->add_action(recents_action_obj);
+  add_action(recents_action_obj);
   // // Create action for changing visual effects
   // GSimpleAction *visuals_action_obj =
   //     g_simple_action_new("change-visuals", NULL);
@@ -95,6 +105,5 @@ void AppState::open_player(Glib::ustring filepath) {
   player->show();
 }
 
-int AppState::run() { return app->run(); }
 void AppState::set_current_filename(gchar *f) { filename = f; }
 gchar *AppState::get_current_filename() { return filename; }

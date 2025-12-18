@@ -25,12 +25,16 @@ HomeInstance::HomeInstance(AppState *state) {
   // Start animation timer (32ms interval ≈ 30fps)
   timeout_id = Glib::signal_timeout().connect(
       sigc::mem_fun(*this, &HomeInstance::on_timeout), 500);
-  state->get_app()->add_window(*win);
+  state->add_window(*win);
 }
 
 void HomeInstance::show() { win->show(); }
 
-void HomeInstance::close() { win->close(); }
+void HomeInstance::close() {
+  if (win) {
+    win->close();
+  }
+}
 
 HomeInstance::~HomeInstance() {
   if (timeout_id.connected()) {
