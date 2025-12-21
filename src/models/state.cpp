@@ -98,10 +98,6 @@ void AppState::load_actions() {
 }
 
 void AppState::open_player(Glib::ustring filepath) {
-  if (this->get_windows().empty()) {
-    quit();
-  }
-
   recents->close();
   player->close();
   home->close();

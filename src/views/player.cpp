@@ -5,7 +5,9 @@
 #include "gio/gio.h"
 #include "glib-object.h"
 #include "glib.h"
+#include "glibmm/ustring.h"
 #include "gtkmm.h"
+#include "gtkmm/button.h"
 #include "gtkmm/label.h"
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediafile.h"
@@ -14,6 +16,7 @@
 #include "models/models.h"
 #include "mpegfile.h"
 #include "pango/pango-layout.h"
+#include "pangomm/layout.h"
 #include "sigc++/functors/mem_fun.h"
 #include "types.h"
 #include "utils.h"
@@ -29,6 +32,10 @@ PlayerInstance::PlayerInstance(AppState *state) {
   artis_label_format = "%s - %s"; // format for artist - album label
   properties_format =
       " %d kbps - %d sec (%d:%02d) - %d Hz"; // format year label
+  date_format = "Released on %d";
+  gender_format = "Gender: %s";
+  artist_format = "Artist(s): %s";
+  path_format = "Filepath: %s";
   return;
 }
 
@@ -38,6 +45,7 @@ void PlayerInstance::close() {
   if (win && media_stream) {
     media_stream->set_playing(false);
     win->close();
+    std::cout << "PlayerInstance closed!!\n";
   }
 }
 
@@ -52,35 +60,10 @@ void PlayerInstance::show() {
   media_controls = builder->get_object<Gtk::MediaControls>("audio_controls");
   media_controls->set_media_stream(media_stream);
 
-  title_label = builder->get_object<Gtk::Label>("title_label");
-  title_label->set_text(metadata->title);
-  auto properties_label = builder->get_object<Gtk::Label>("year_label");
-  properties_label->set_text(
-      Glib::ustring::sprintf(properties_format, metadata->properties->bitrate,
-                             metadata->properties->length,
-                             (int)metadata->properties->length / MIN_IN_SECS,
-                             (int)metadata->properties->length % MIN_IN_SECS,
-                             metadata->properties->samplerate));
-  auto artist_album_label =
-      builder->get_object<Gtk::Label>("artist_album_label");
-  artist_album_label->set_text(Glib::ustring::sprintf(
-      artis_label_format, metadata->artist, metadata->album));
-
-  auto albumart_content = builder->get_object<Gtk::Box>("album_lyrics_cont");
-
-  if (metadata->raw_albumart) {
-    auto loader = Gdk::PixbufLoader::create();
-    loader->write(metadata->raw_albumart, metadata->raw_albumart_size);
-    loader->close();
-    auto pixbuf = loader->get_pixbuf();
-    auto texture = Gdk::Texture::create_for_pixbuf(pixbuf);
-
-    auto image = Gtk::make_managed<Gtk::Picture>(texture);
-    image->set_vexpand(true);
-    image->set_hexpand(true);
-    albumart_content->append(*image);
-  }
-
+  setup_labels(builder);
+  setup_albumart(builder);
+  setup_button_actions(builder);
+  setup_metadata_side(builder);
   // ui stuff
   win = builder->get_object<Gtk::Window>("player_window");
   win->signal_close_request().connect(
@@ -91,68 +74,85 @@ void PlayerInstance::show() {
       false);
 
   state->add_window(*win);
-  win->show();
+  win->present();
 }
 
-// static void draw_callback(GtkDrawingArea *area, cairo_t *cr, int width,
-//                           int height, gpointer user_data) {
-//   AppData *app = (AppData *)user_data;
-//   GdkRGBA color;
-//
-//   cairo_set_antialias(cr, CAIRO_ANTIALIAS_BEST);
-//   // Set drawing properties
-//   cairo_set_source_rgb(cr, 1, 1, 1); // White color
-//   cairo_set_line_width(cr, 5);       // Line width
-//   cairo_paint(cr);
-//
-//   if (app->audio_data && app->data_size > 0) {
-//     // Onda de audio en verde
-//     cairo_set_source_rgb(cr, 0, 1, 0);
-//     cairo_set_line_width(cr, 1.5);
-//     cairo_move_to(cr, 0, (float)height / 2);
-//
-//     for (int i = 0; i < width; i++) {
-//       int index = (i * app->data_size) / width;
-//       float sample = app->audio_data[index];
-//       float y = ((float)height / 2) + (sample * ((float)height / 2));
-//       cairo_line_to(cr, i, y);
-//     }
-//     cairo_stroke(cr);
-//   }
-//   gtk_widget_get_color(GTK_WIDGET(area), &color);
-//   gdk_cairo_set_source_rgba(cr, &color);
-//   cairo_fill(cr);
-// }
-//
-// static void update_visualizer(AppData *app) {
-//   // Aquí iría la lógica para obtener los datos de audio actuales
-//   // Esto es un ejemplo simplificado
-//   if (app->media_stream && gtk_media_stream_get_playing(app->media_stream)) {
-//     // Simular datos de audio (en una implementación real usarías GStreamer)
-//     if (app->audio_data)
-//       g_free(app->audio_data);
-//     app->data_size = 1000;
-//     app->audio_data = g_new(float, app->data_size);
-//
-//     for (int i = 0; i < app->data_size; i++) {
-//       app->audio_data[i] = sin(i * 0.1) * 0.5;
-//     }
-//
-//     gtk_widget_queue_draw(GTK_WIDGET(app->home->drawing_area));
-//   } else {
-//     if (app->audio_data)
-//       g_free(app->audio_data);
-//     app->audio_data = NULL;
-//     gtk_widget_queue_draw(GTK_WIDGET(app->home->drawing_area));
-//   }
-// }
-//
-// static gboolean on_timeout_playing(gpointer user_data) {
-//   AppData *app = (AppData *)user_data;
-//   update_visualizer(app);
-//   return G_SOURCE_CONTINUE;
-// }
-//
+void PlayerInstance::setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder) {
+  metadata_side = builder->get_object<Gtk::Box>("metadata_side");
+
+  auto filepath_label = builder->get_object<Gtk::Label>("filepath_label");
+  filepath_label->set_label(
+      Glib::ustring::sprintf(path_format, state->get_song()->get_filepath()));
+  filepath_label->set_tooltip_text(state->get_song()->get_filepath());
+  auto filespecs_label = builder->get_object<Gtk::Label>("filespecs_label");
+  filespecs_label->set_label(
+      Glib::ustring::sprintf(properties_format, metadata->properties->bitrate,
+                             metadata->properties->length,
+                             (int)metadata->properties->length / MIN_IN_SECS,
+                             (int)metadata->properties->length % MIN_IN_SECS,
+                             metadata->properties->samplerate));
+  auto gender_label = builder->get_object<Gtk::Label>("gender_label");
+  gender_label->set_label(
+      Glib::ustring::sprintf(gender_format, metadata->genre));
+  auto date_label = builder->get_object<Gtk::Label>("date_label");
+  date_label->set_label(Glib::ustring::sprintf(date_format, metadata->year));
+  auto artist_label = builder->get_object<Gtk::Label>("artist_label");
+  artist_label->set_label(
+      Glib::ustring::sprintf(artist_format, metadata->artist));
+}
+
+void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {
+  auto lyrics_btn = builder->get_object<Gtk::Button>("lyrics_btn");
+  lyrics_btn->signal_clicked().connect([this]() {
+    lyrics_visible = !lyrics_visible;
+    lyrics_label->set_visible(lyrics_visible);
+  });
+
+  auto metadata_side_btn =
+      builder->get_object<Gtk::Button>("metadata_side_btn");
+  metadata_side_btn->signal_clicked().connect([this]() {
+    metadata_side_visible = !metadata_side_visible;
+    metadata_side->set_visible(metadata_side_visible);
+  });
+}
+
+void PlayerInstance::setup_albumart(Glib::RefPtr<Gtk::Builder> builder) {
+  auto albumart_content = builder->get_object<Gtk::Box>("album_lyrics_cont");
+  lyrics_label = builder->get_object<Gtk::Label>("lyrics_label");
+
+  if (metadata->raw_albumart) {
+    auto loader = Gdk::PixbufLoader::create();
+    loader->write(metadata->raw_albumart, metadata->raw_albumart_size);
+    loader->close();
+    auto pixbuf = loader->get_pixbuf();
+    auto texture = Gdk::Texture::create_for_pixbuf(pixbuf);
+
+    albumart_picture = builder->get_object<Gtk::Picture>("albumart_picture");
+    albumart_picture->set_paintable(texture);
+    albumart_picture->set_vexpand(true);
+    albumart_picture->set_hexpand(true);
+  }
+}
+
+void PlayerInstance::setup_labels(Glib::RefPtr<Gtk::Builder> builder) {
+  title_label = builder->get_object<Gtk::Label>("title_label");
+  title_label->set_text(metadata->title);
+  title_label->set_ellipsize(Pango::EllipsizeMode::END);
+  auto properties_label = builder->get_object<Gtk::Label>("year_label");
+  properties_label->set_text(
+      Glib::ustring::sprintf(properties_format, metadata->properties->bitrate,
+                             metadata->properties->length,
+                             (int)metadata->properties->length / MIN_IN_SECS,
+                             (int)metadata->properties->length % MIN_IN_SECS,
+                             metadata->properties->samplerate));
+  properties_label->set_ellipsize(Pango::EllipsizeMode::END);
+  auto artist_album_label =
+      builder->get_object<Gtk::Label>("artist_album_label");
+  artist_album_label->set_ellipsize(Pango::EllipsizeMode::END);
+  artist_album_label->set_text(Glib::ustring::sprintf(
+      artis_label_format, metadata->artist, metadata->album));
+}
+
 // int load_player_window(AppData *app_data) {
 //   // load_actions(app_data);
 //
@@ -233,12 +233,11 @@ void PlayerInstance::show() {
 //       GtkWidget *image =
 //       gtk_picture_new_for_paintable(GDK_PAINTABLE(texture));
 //       gtk_widget_set_vexpand(image, TRUE);
-//       gtk_widget_set_hexpand(image, TRUE);
-//       gtk_box_append(albumart_content, image);
 //
 //       g_object_unref(texture);
 //       g_object_unref(loader);
 //     }
+//     gtk_widget_set_vexpand(app_data->lyrics_label, TRUE);
 //     app_data->lyrics_label = gtk_label_new("No lyrics");
 //     if (!app_data->lyrics.empty()) {
 //       gtk_label_set_label(GTK_LABEL(app_data->lyrics_label),
@@ -251,7 +250,6 @@ void PlayerInstance::show() {
 //         }
 //       }
 //     }
-//     gtk_widget_set_vexpand(app_data->lyrics_label, TRUE);
 //     gtk_widget_set_hexpand(app_data->lyrics_label, TRUE);
 //     gtk_label_set_wrap(GTK_LABEL(app_data->lyrics_label), true);
 //     gtk_widget_set_margin_bottom(app_data->lyrics_label, 20);

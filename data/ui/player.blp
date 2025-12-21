@@ -3,7 +3,7 @@ using Gtk 4.0;
 Window player_window{
   title:"riplay";
   resizable:false;
-  default-width:532;
+  default-width:632;
   default-height:532;
 
   [titlebar]
@@ -31,80 +31,147 @@ Window player_window{
   }
 
   Box {
-    margin-top:12;
-    margin-bottom:12;
-    margin-start:12;
-    margin-end:12;
-    spacing:12;
-
-    orientation: vertical;
-
-    Box {
-      orientation: vertical;
+      Box {
+      margin-top:12;
+      margin-bottom:12;
+      margin-start:12;
+      margin-end:12;
       spacing:12;
-      hexpand:true;
-      
-      Box playing_view{
-        spacing:3;
-        orientation:vertical;
 
-        Label title_label{
-          label:"Title";
-          margin-bottom:8;
-          vexpand:true;
-          css-classes:["title-1"];
+      orientation: vertical;
+
+      Box {
+        orientation: vertical;
+        spacing:12;
+        hexpand:true;
+        
+        Box playing_view{
+          spacing:3;
+          orientation:vertical;
+
+          Label title_label{
+            label:"Title";
+            margin-bottom:8;
+            vexpand:true;
+            css-classes:["title-1"];
+          }
+
+          Label artist_album_label {
+            label:"Artist - Album";
+            css-classes:["dim-label"];
+            margin-bottom:6;
+            hexpand:true;
+          }
+
+          Label year_label{
+            label:"2000";
+            css-classes:["dim-label"];
+            margin-bottom:6;
+            hexpand:true;
+          }
+          Box tools_cont{
+            margin-bottom:8;
+            spacing:8;
+            hexpand:true;
+            halign:center;
+
+            Button open_new_file{
+              margin-end:15;
+              icon-name:"audio-x-generic-symbolic";
+              can-shrink:true;
+              tooltip-text:"Open new song";
+            }
+            Button equalizer_btn{
+              icon-name:"multimedia-equalizer-symbolic";
+              can-shrink:true;
+              tooltip-text:"Open equalizer";
+            }
+            Button volume_btn{
+              icon-name:"org.gnome.Settings-sound-symbolic";
+              tooltip-text:"Mute/Unmute";
+            }
+            Button lyrics_btn{
+              icon-name:"format-justify-fill-symbolic";
+              tooltip-text:"Show lyrics";
+            }
+            Button metadata_side_btn{
+              margin-start:15;
+              icon-name:"info-outline-symbolic";
+              can-shrink:true;
+              css-classes:["circular"];
+              tooltip-text:"View metadata";
+            }
+          }
+          Box album_lyrics_cont{
+            Label lyrics_label{
+              margin-top:10;
+              margin-bottom:10;
+              margin-start:10;
+              margin-end:10; 
+              wrap:true;
+              max-width-chars:16;
+              // xalign:3;
+              hexpand:true;
+              visible:false;
+              label:"No lyrics for this song :(";
+            }
+            Picture albumart_picture{
+
+            }
+          }
         }
 
-        Label artist_album_label {
-          label:"Artist - Album";
-          css-classes:["dim-label"];
-          margin-bottom:6;
-          hexpand:true;
-        }
-
-        Label year_label{
-          label:"2000";
-          css-classes:["dim-label"];
-          margin-bottom:6;
-          hexpand:true;
-        }
-        Box tools_cont{
-          margin-bottom:8;
-          spacing:8;
-          hexpand:true;
-          halign:center;
-
-          Button open_new_file{
-            margin-end:15;
-            icon-name:"audio-x-generic-symbolic";
-            can-shrink:true;
-            tooltip-text:"Open new song";
-          }
-          Button equalizer_btn{
-            icon-name:"multimedia-equalizer-symbolic";
-            can-shrink:true;
-            tooltip-text:"Open equalizer";
-          }
-          Button volume_btn{
-            icon-name:"org.gnome.Settings-sound-symbolic";
-            tooltip-text:"Mute/Unmute";
-          }
-          Button more_info_btn{
-            margin-start:15;
-            icon-name:"info-outline-symbolic";
-            can-shrink:true;
-            css-classes:["circular"];
-            tooltip-text:"View metadata";
-          }
-        }
-        Box album_lyrics_cont{
-          
+        MediaControls audio_controls{
+          hexpand:true; 
         }
       }
+    }
+    Box metadata_side{
+      orientation:vertical;
+      spacing:8;
+      margin-top:10;
+      margin-bottom:10;
+      margin-start:10;
+      margin-end:10; 
+      halign:center;
+      visible:false;
 
-      MediaControls audio_controls{
-        hexpand:true; 
+      Label{
+        label:"Metadata";
+        css-classes:["title-3"];
+      }
+
+      Label filepath_label{
+        label:"path: /home/renato/idk.mp3";
+        wrap:true;
+        selectable:true;
+        wrap-mode:char;
+        max-width-chars:20;
+      }
+      Label filespecs_label{
+        label:"File size: mb";
+        wrap:true;
+        wrap-mode:char;
+        max-width-chars:20;
+      }
+      Label gender_label{
+        label:"Gender: Pop";
+        wrap:true;
+        wrap-mode:char;
+        max-width-chars:20;
+      }
+      Label date_label{
+        label:"Year: 2024";
+        wrap:true;
+        wrap-mode:char;
+        max-width-chars:20;
+      }
+      Label artist_label{
+        wrap:true;
+        wrap-mode:char;
+        max-width-chars:20;
+        label:"Artist: artistidk";
       }
     }
   }
-}
+} 

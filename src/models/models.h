@@ -5,15 +5,18 @@
 #include "glibmm/refptr.h"
 #include "gtk/gtk.h"
 #include "gtkmm/application.h"
+#include "gtkmm/builder.h"
 #include "gtkmm/drawingarea.h"
 #include "gtkmm/label.h"
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediastream.h"
+#include "gtkmm/picture.h"
 #include "gtkmm/widget.h"
 #include "gtkmm/window.h"
 #include "types.h"
 #include <gtkmm/box.h>
 #include <memory>
+#include <string>
 
 // defs
 class AppState;
@@ -111,12 +114,27 @@ private:
   AppState *state;
   Glib::RefPtr<Gtk::Window> win;
   Glib::RefPtr<Gtk::Label> title_label;
+  Glib::RefPtr<Gtk::Box> metadata_side;
+  Glib::RefPtr<Gtk::Label> lyrics_label;
+  Glib::RefPtr<Gtk::Picture> albumart_picture;
   Glib::RefPtr<Gtk::MediaStream> media_stream;
   Glib::RefPtr<Gtk::MediaControls> media_controls;
+
   std::string artis_label_format;
   std::string properties_format;
+  std::string path_format;
+  std::string date_format;
+  std::string gender_format;
+  std::string artist_format;
 
+  gboolean lyrics_visible = false;
+  gboolean metadata_side_visible = false;
   std::shared_ptr<FileMetadata> metadata;
+  void setup_labels(Glib::RefPtr<Gtk::Builder> builder);
+  void setup_button_actions(Glib::RefPtr<Gtk::Builder> builder);
+  void setup_albumart(Glib::RefPtr<Gtk::Builder> builder);
+  void setup_lyrics(Glib::RefPtr<Gtk::Builder> builder);
+  void setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder);
 
 public:
   PlayerInstance(AppState *state);

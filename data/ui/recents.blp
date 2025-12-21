@@ -36,8 +36,16 @@ Window recents{
       spacing:12;
 
       Button reset_history_btn{
-        label:"Reset";
         css-classes:["destructive-action"];
+        child:Box{
+          spacing:8;
+          Image{
+            icon-name: "user-trash-symbolic";
+          }
+          Label{
+            label:"Reset";
+          }
+        };
       }
       
       Button back_btn{
