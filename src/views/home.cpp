@@ -1,11 +1,19 @@
 #include "cairomm/context.h"
 #include "gdkmm/rgba.h"
+#include "giomm/listmodel.h"
+#include "giomm/liststore.h"
 #include "glibmm/main.h"
+#include "glibmm/miscutils.h"
 #include "glibmm/refptr.h"
 #include "gtkmm/drawingarea.h"
+#include "gtkmm/error.h"
+#include "gtkmm/filedialog.h"
+#include "gtkmm/filefilter.h"
+#include "gtkmm/object.h"
 #include "gtkmm/window.h"
 #include "models/models.h"
 #include "sigc++/functors/mem_fun.h"
+#include "sigc++/functors/ptr_fun.h"
 #include "utils.h"
 #include <memory>
 #include <sched.h>
@@ -80,44 +88,44 @@ void HomeInstance::draw_stand_by_function(
   cr->fill();
 }
 
-// void file_dialog_response(GObject *source_object, GAsyncResult *result,
-//                           AppData *app_data) {
-//   GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
-//   GError *error = NULL;
-//
-//   // Get selected file
-//   GFile *file = gtk_file_dialog_open_finish(dialog, result, &error);
-//
-//   if (error) {
-//     g_printerr("File selection error: %s\n", error->message);
-//     g_error_free(error);
-//     return;
-//   }
-//
-//   if (!file) {
-//     g_print("No file selected\n");
-//     return;
-//   }
-//
-//   // Get file path
-//   char *filepath = g_file_get_path(file);
-//   if (!filepath) {
-//     g_object_unref(file);
-//     g_critical("Failed to get file path");
-//     return;
-//   }
-//
-//   // add filepath to file history
-//   add_to_recent_files(filepath);
-//
-//   // Start new playback session
-//   clean_new_on_playing(filepath);
-//
-//   // Clean up
-//   g_free(filepath);
-//   g_object_unref(file);
-// }
-//
+void HomeInstance::open_new_file(const Glib::VariantBase &parameter) {
+
+  open_new_file_dialog = Gtk::FileDialog::create();
+  open_new_file_dialog->set_title("Select a song");
+  open_new_file_dialog->set_modal(true);
+
+  auto music_dir = Gio::File::create_for_path(
+      Glib::get_user_special_dir(Glib::UserDirectory::MUSIC));
+  open_new_file_dialog->set_initial_folder(music_dir);
+
+  auto audio_filters = Gtk::FileFilter::create();
+  audio_filters->set_name("Audio files");
+  audio_filters->add_mime_type("audio/*");
+
+  auto filters = Gio::ListStore<Gtk::FileFilter>::create();
+  filters->append(audio_filters);
+
+  open_new_file_dialog->set_filters(filters);
+  open_new_file_dialog->open(
+      dynamic_cast<Gtk::Window &>(*win),
+      sigc::mem_fun(*this, &HomeInstance::file_dialog_response));
+}
+
+void HomeInstance::file_dialog_response(
+    Glib::RefPtr<Gio::AsyncResult> &result) {
+  Glib::RefPtr<Gio::File> file = open_new_file_dialog->open_finish(result);
+  if (!file) {
+    g_print("No file selected\n");
+    return;
+  }
+
+  std::string filepath = file->get_path();
+
+  // add_to_recent_files(filepath);
+
+  state->open_player(filepath);
+}
+
 // /**
 //  * @brief Opens file selection dialog
 //  *

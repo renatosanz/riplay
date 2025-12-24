@@ -5,6 +5,7 @@ Window player_window{
   resizable:false;
   default-width:632;
   default-height:532;
+  modal:false;
 
   [titlebar]
   HeaderBar {
@@ -80,6 +81,7 @@ Window player_window{
               icon-name:"audio-x-generic-symbolic";
               can-shrink:true;
               tooltip-text:"Open new song";
+              action-name:"app.open-new-file";
             }
             Button equalizer_btn{
               icon-name:"multimedia-equalizer-symbolic";

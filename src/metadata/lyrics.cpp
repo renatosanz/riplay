@@ -1,6 +1,14 @@
 #include "glib.h"
 #include "glib/gprintf.h"
 #include "glibconfig.h"
+#include "glibmm/main.h"
+#include "glibmm/refptr.h"
+#include "gtkmm/label.h"
+#include "gtkmm/mediastream.h"
+#include "metadata/metadata.h"
+#include "models/models.h"
+#include "sigc++/adaptors/bind.h"
+#include "sigc++/functors/mem_fun.h"
 #include "tstringlist.h"
 #include "types.h"
 #include <algorithm>
@@ -9,6 +17,7 @@
 #include <cstdlib>
 #include <gtk/gtk.h>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <regex>
 #include <stdexcept> // Para manejo de errores
@@ -30,9 +39,11 @@
 #include <xiphcomment.h>
 
 static std::atomic<bool> lyrics_running(false);
+static std::atomic<size_t> lyrics_index = 0;
+static size_t lyrics_count = 0;
 static std::thread lyrics_thread;
 static std::vector<LyricBar> current_lyrics;
-static GtkLabel *lyrics_label = nullptr;
+static Glib::RefPtr<Gtk::Label> lyrics_label = nullptr;
 static std::vector<std::string> f_lrc_props = {"by", "offset"};
 
 gchar *convert_to_utf8(const char *input) {
@@ -43,46 +54,47 @@ gchar *convert_to_utf8(const char *input) {
   return utf8_str;
 }
 
-static gboolean update_lyric_label(gpointer user_data) {
-  const char *text = (const char *)(user_data);
+static gboolean update_lyric_label(std::string text) {
   // gtk_label_set_text(lyrics_label, (char *)convert_to_utf8(text));
-  gtk_label_set_text(lyrics_label, text);
+  lyrics_label->set_label(text);
   return G_SOURCE_REMOVE; // eliminar el source después de ejecutar
 }
 
-static void lyrics_worker(GtkMediaStream *stream) {
-  size_t index = 0;
-  const size_t lyrics_count = current_lyrics.size();
+static void lyrics_worker(Glib::RefPtr<Gtk::MediaStream> stream) {
+  lyrics_count = current_lyrics.size();
 
-  while (lyrics_running && index < lyrics_count) {
-    if (gtk_media_stream_get_playing(stream)) {
+  while (lyrics_running && lyrics_index < lyrics_count) {
+    if (stream->get_playing()) {
 
-      guint64 current_time = gtk_media_stream_get_timestamp(stream);
+      guint64 current_time = stream->get_timestamp();
 
-      if (current_lyrics[index].timestamp > current_time) {
-        index = 0;
+      if (current_lyrics[lyrics_index].timestamp > current_time) {
+        lyrics_index = 0;
         for (auto x : current_lyrics) {
           if (x.timestamp < current_time) {
-            index++;
+            lyrics_index++;
           }
         }
-        if (index > 0)
-          index--;
+        if (lyrics_index > 0)
+          lyrics_index--;
       }
-      while (index < lyrics_count &&
-             current_lyrics[index].timestamp <= current_time) {
-        g_idle_add(update_lyric_label,
-                   (gpointer)current_lyrics[index].lyric.c_str());
-        index++;
+      while (lyrics_index < lyrics_count &&
+             current_lyrics[lyrics_index].timestamp <= current_time) {
+        Glib::signal_idle().connect(
+            [text = current_lyrics[lyrics_index].lyric]() {
+              lyrics_label->set_label(text);
+              return false; // Remove after executing
+            });
+        lyrics_index++;
       }
-    } else if (index == lyrics_count - 1) {
-      index = 0;
+    } else if (lyrics_index == lyrics_count - 1) {
+      lyrics_index = 0;
       lyrics_running = true;
-      g_printf("flaaaaaaaag!! index : %d  lyrics_count : %d", index,
-               lyrics_count);
+      std::cout << "flaaaaaaaag!! index : " << lyrics_index
+                << " lyrics_count: " << lyrics_count << std::endl;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(33));
   }
 }
 
@@ -94,16 +106,21 @@ void stop_lyrics_display() {
   }
 
   current_lyrics.clear();
-  lyrics_label = nullptr;
+  lyrics_label.reset();
+}
+
+void end_lyrics_thread() {
+  lyrics_index = lyrics_count;
+  stop_lyrics_display();
 }
 
 void start_lyrics_display(const std::vector<LyricBar> &lyrics,
-                          GtkMediaStream *stream, GtkLabel *label) {
+                          Glib::RefPtr<Gtk::MediaStream> stream,
+                          Glib::RefPtr<Gtk::Label> label) {
   stop_lyrics_display();
   current_lyrics = lyrics;
   lyrics_label = label;
   lyrics_running = true;
-
   try {
     lyrics_thread = std::thread(lyrics_worker, stream);
   } catch (...) {
@@ -112,8 +129,8 @@ void start_lyrics_display(const std::vector<LyricBar> &lyrics,
   }
 }
 
-std::variant<bool, std::string> extractLyrics(const char *filePath) {
-  TagLib::FileRef file(filePath);
+std::variant<bool, std::string> extractLyrics(std::string filePath) {
+  TagLib::FileRef file(filePath.c_str());
 
   if (!file.isNull() && file.tag()) {
     // handle mp3 files (id3v2 tags)

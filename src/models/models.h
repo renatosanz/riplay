@@ -7,6 +7,7 @@
 #include "gtkmm/application.h"
 #include "gtkmm/builder.h"
 #include "gtkmm/drawingarea.h"
+#include "gtkmm/filedialog.h"
 #include "gtkmm/label.h"
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediastream.h"
@@ -66,11 +67,17 @@ class SongInstance {
 
 private:
   std::string filepath;
+  std::string raw_lyrics;
   std::shared_ptr<FileMetadata> metadata;
+  std::vector<LyricBar> sync_lyrics;
+  std::vector<LyricProp> lyric_props;
 
 public:
   SongInstance(std::string filepath);
   std::string get_filepath();
+  std::vector<LyricBar> get_sync_lyrics();
+  std::vector<LyricProp> get_lyrics_props();
+  std::string get_raw_lyrics();
   std::shared_ptr<FileMetadata> get_metadata();
   // ~SongInstance();
 };
@@ -81,6 +88,7 @@ private:
   AppState *state;
   Glib::RefPtr<Gtk::Window> win;
   Glib::RefPtr<Gtk::DrawingArea> drawing_area;
+  Glib::RefPtr<Gtk::FileDialog> open_new_file_dialog;
   sigc::connection timeout_id;
   int position;
 
@@ -88,11 +96,14 @@ private:
                               int width, int height);
   bool on_timeout();
 
+  void file_dialog_response(Glib::RefPtr<Gio::AsyncResult> &);
+
 public:
   HomeInstance(AppState *state);
   ~HomeInstance();
   void show();
   void close();
+  void open_new_file(const Glib::VariantBase &parameter);
 };
 
 class RecentsInstance {

@@ -56,9 +56,15 @@ void AppState::load_actions() {
   printf("Loading actions load_actions()...\n");
   // Create action for opening recent files
   auto recents_action_obj = Gio::SimpleAction::create("open-recents");
+  auto open_new_file_action_obj = Gio::SimpleAction::create("open-new-file");
+
   recents_action_obj->signal_activate().connect(
       sigc::mem_fun(*recents, &RecentsInstance::show));
+  open_new_file_action_obj->signal_activate().connect(
+      sigc::mem_fun(*home, &HomeInstance::open_new_file));
+
   add_action(recents_action_obj);
+  add_action(open_new_file_action_obj);
   // // Create action for changing visual effects
   // GSimpleAction *visuals_action_obj =
   //     g_simple_action_new("change-visuals", NULL);
