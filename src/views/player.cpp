@@ -23,6 +23,7 @@
 #include "utils.h"
 #include <glycin-2/glycin.h>
 #include <iostream>
+#include <memory>
 #include <variant>
 #include <vector>
 #define PLAYER_UI_PATH "/org/riplay/data/ui/player.ui"
@@ -45,7 +46,7 @@ void PlayerInstance::close() {
   if (win && media_stream) {
     media_stream->set_playing(false);
     win->close();
-    end_lyrics_thread();
+    lyrics_manager->stop_synced_lyrics();
     std::cout << "PlayerInstance closed!!\n";
   }
 }
@@ -68,6 +69,12 @@ void PlayerInstance::show() {
   setup_lyrics(builder);
   // ui stuff
   win = builder->get_object<Gtk::Window>("player_window");
+  win->signal_close_request().connect(
+      [this]() {
+        this->close();
+        return false;
+      },
+      false);
 
   state->add_window(*win);
   win->present();
@@ -98,23 +105,8 @@ void PlayerInstance::setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder) {
 }
 
 void PlayerInstance::setup_lyrics(Glib::RefPtr<Gtk::Builder> builder) {
-  auto sync_lyrics = state->get_song()->get_sync_lyrics();
-  auto raw_lyrics = state->get_song()->get_raw_lyrics();
-  auto lyrics_props = state->get_song()->get_lyrics_props();
-
-  if (!sync_lyrics.empty()) {
-    lyrics_label->set_label(sync_lyrics[0].lyric.c_str());
-    // start_lyrics_display(app_data->lyrics, app_data->media_stream,
-    //                      GTK_LABEL(app_data->lyrics_label));
-    start_lyrics_display(sync_lyrics, media_stream, lyrics_label);
-    if (!lyrics_props.empty()) {
-      for (auto x : lyrics_props) {
-        std::cout << x.field << " : " << x.value << std::endl;
-      }
-    }
-  } else if (raw_lyrics.length() > 0) {
-    lyrics_label->set_label(raw_lyrics);
-  }
+  lyrics_manager = std::make_shared<LyricsManager>(this->state->get_song());
+  lyrics_manager->start_lyrics_display(this->media_stream, this->lyrics_label);
 }
 
 void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {

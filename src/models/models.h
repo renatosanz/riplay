@@ -25,6 +25,7 @@ class HomeInstance;
 class RecentsInstance;
 class PlayerInstance;
 class SongInstance;
+class LyricsManager;
 
 // state
 class AppState : public Gtk::Application {
@@ -67,17 +68,11 @@ class SongInstance {
 
 private:
   std::string filepath;
-  std::string raw_lyrics;
   std::shared_ptr<FileMetadata> metadata;
-  std::vector<LyricBar> sync_lyrics;
-  std::vector<LyricProp> lyric_props;
 
 public:
   SongInstance(std::string filepath);
   std::string get_filepath();
-  std::vector<LyricBar> get_sync_lyrics();
-  std::vector<LyricProp> get_lyrics_props();
-  std::string get_raw_lyrics();
   std::shared_ptr<FileMetadata> get_metadata();
   // ~SongInstance();
 };
@@ -146,6 +141,8 @@ private:
   void setup_albumart(Glib::RefPtr<Gtk::Builder> builder);
   void setup_lyrics(Glib::RefPtr<Gtk::Builder> builder);
   void setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder);
+
+  std::shared_ptr<LyricsManager> lyrics_manager;
 
 public:
   PlayerInstance(AppState *state);
