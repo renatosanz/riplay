@@ -21,6 +21,7 @@ void end_lyrics_thread();
 class LyricsManager {
 private:
   std::atomic_bool is_sync;
+  std::atomic_bool has_lyrics;
   std::string raw_lyrics;             // plain text lyrics
   std::vector<LyricBar> sync_lyrics;  // timed synced lyrics
   std::vector<LyricProp> lyric_props; // synced lyrics props
@@ -34,9 +35,11 @@ public:
   unsigned char *extractAlbumArt(unsigned long *size);
   std::variant<bool, std::string> extractLyrics(std::string filePath);
   int update_lyric();
-  void start_lyrics_display(Glib::RefPtr<Gtk::MediaStream> stream,
-                            Glib::RefPtr<Gtk::Label> label);
+  void setup(Glib::RefPtr<Gtk::MediaStream> stream,
+             Glib::RefPtr<Gtk::Label> label);
   void stop_synced_lyrics();
+  void toggle_update_lyrics(bool);
+  void continue_synced_lyrics();
 };
 
 #endif

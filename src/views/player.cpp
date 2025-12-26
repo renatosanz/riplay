@@ -1,32 +1,23 @@
 #include "player.h"
-#include "actions.h"
-#include "gdkmm/pixbuf.h"
+#include "gdkmm/pixbufloader.h"
 #include "gdkmm/texture.h"
-#include "gio/gio.h"
-#include "glib-object.h"
-#include "glib.h"
 #include "glibmm/ustring.h"
-#include "gtkmm.h"
 #include "gtkmm/button.h"
 #include "gtkmm/label.h"
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediafile.h"
-#include "gtkmm/object.h"
 #include "gtkmm/picture.h"
 #include "metadata/metadata.h"
 #include "models/models.h"
-#include "mpegfile.h"
-#include "pango/pango-layout.h"
 #include "pangomm/layout.h"
-#include "sigc++/functors/mem_fun.h"
 #include "types.h"
 #include "utils.h"
 #include <glycin-2/glycin.h>
 #include <iostream>
 #include <memory>
-#include <variant>
-#include <vector>
 #define PLAYER_UI_PATH "/org/riplay/data/ui/player.ui"
+
+using Glib::RefPtr;
 
 PlayerInstance::PlayerInstance(AppState *state) {
   this->state = state;
@@ -104,9 +95,10 @@ void PlayerInstance::setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder) {
       Glib::ustring::sprintf(artist_format, metadata->artist));
 }
 
-void PlayerInstance::setup_lyrics(Glib::RefPtr<Gtk::Builder> builder) {
+void PlayerInstance::setup_lyrics(RefPtr<Gtk::Builder> builder) {
+  lyrics_label = builder->get_object<Gtk::Label>("lyrics_label");
   lyrics_manager = std::make_shared<LyricsManager>(this->state->get_song());
-  lyrics_manager->start_lyrics_display(this->media_stream, this->lyrics_label);
+  lyrics_manager->setup(this->media_stream, this->lyrics_label);
 }
 
 void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {
@@ -114,6 +106,7 @@ void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {
   lyrics_btn->signal_clicked().connect([this]() {
     lyrics_visible = !lyrics_visible;
     lyrics_label->set_visible(lyrics_visible);
+    lyrics_manager->toggle_update_lyrics(lyrics_visible);
   });
 
   auto metadata_side_btn =
@@ -126,7 +119,6 @@ void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {
 
 void PlayerInstance::setup_albumart(Glib::RefPtr<Gtk::Builder> builder) {
   auto albumart_content = builder->get_object<Gtk::Box>("album_lyrics_cont");
-  lyrics_label = builder->get_object<Gtk::Label>("lyrics_label");
 
   if (metadata->raw_albumart) {
     auto loader = Gdk::PixbufLoader::create();

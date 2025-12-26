@@ -56,12 +56,17 @@ LyricsManager::LyricsManager(std::shared_ptr<SongInstance> song) {
 }
 
 int LyricsManager::update_lyric() {
-  if (!stream || !stream->get_playing()) {
-    return false;
+  if (!stream->get_playing()) {
+    if (stream->get_ended() || lyrics_index != 0) {
+      lyrics_index = 0;
+      lyrics_label->set_label(sync_lyrics[lyrics_index].lyric);
+    }
+    return true;
   }
 
-  int64_t current_time = stream->get_timestamp(); // Convert to ms
-  // printf("updating lyrics in %ld \n", current_time);
+  int64_t current_time = stream->get_timestamp(); // convert to ms
+  // std::cout << "updating lyrics in" << current_time << "ms - index "
+  //           << lyrics_index << std::endl;
   for (size_t i = lyrics_index; i < sync_lyrics.size(); i++) {
     if (current_time >= sync_lyrics[i].timestamp) {
       if (i != lyrics_index) {
@@ -76,27 +81,40 @@ int LyricsManager::update_lyric() {
   return true;
 }
 
-void LyricsManager::start_lyrics_display(Glib::RefPtr<Gtk::MediaStream> stream,
-                                         Glib::RefPtr<Gtk::Label> label) {
-  if (sync_lyrics.empty() || !stream) {
+void LyricsManager::toggle_update_lyrics(bool is_visible) {
+  if (!is_visible) {
+    stop_synced_lyrics();
+  } else if (is_sync) {
+    continue_synced_lyrics();
+  }
+};
+
+void LyricsManager::continue_synced_lyrics() {
+  lyric_sync_connection = Glib::signal_timeout().connect(
+      sigc::mem_fun(*this, &LyricsManager::update_lyric),
+      240); // check every 100ms
+
+  // if (!lyric_props.empty()) {
+  //   for (auto x : lyric_props) {
+  //     std::cout << x.field << " : " << x.value << std::endl;
+  //   }
+  // }
+}
+
+void LyricsManager::setup(Glib::RefPtr<Gtk::MediaStream> stream,
+                          Glib::RefPtr<Gtk::Label> label) {
+  if (!stream) {
     return;
   }
+
   lyrics_label = label;
   this->stream = stream;
 
-  if (!sync_lyrics.empty()) {
-    lyrics_label->set_label(sync_lyrics[0].lyric.c_str());
-    lyrics_index = 0;
-    lyric_sync_connection = Glib::signal_timeout().connect(
-        sigc::mem_fun(*this, &LyricsManager::update_lyric),
-        240); // check every 100ms
-
-    if (!lyric_props.empty()) {
-      for (auto x : lyric_props) {
-        std::cout << x.field << " : " << x.value << std::endl;
-      }
-    }
-  } else if (raw_lyrics.length() > 0) {
+  is_sync = !sync_lyrics.empty();
+  has_lyrics = raw_lyrics.length() > 0;
+  if (is_sync) {
+    lyrics_label->set_label(sync_lyrics[lyrics_index].lyric);
+  } else if (has_lyrics) {
     lyrics_label->set_label(raw_lyrics);
   }
 }
