@@ -24,7 +24,7 @@ mpg123_dep = dependency('libmpg123', required: true)
 # gst_app_dep = dependency('gstreamer-app-1.0', required: true)
 # gst_audio_dep = dependency('gstreamer-audio-1.0', required: true)
 # libavformat = dependency('libavformat', required: true)
-taglib = dependency('taglib_c', required: true)
+taglib = dependency('taglib', required: true, static: true)
 # sdl2_dep = dependency('sdl2', required: true)
 
 # all .c files in src_dir to be compiled

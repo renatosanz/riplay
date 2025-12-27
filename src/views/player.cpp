@@ -12,7 +12,6 @@
 #include "pangomm/layout.h"
 #include "types.h"
 #include "utils.h"
-#include <glycin-2/glycin.h>
 #include <iostream>
 #include <memory>
 #define PLAYER_UI_PATH "/org/riplay/data/ui/player.ui"
