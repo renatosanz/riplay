@@ -1,5 +1,18 @@
 using Gtk 4.0;
 
+menu top_bar_menu{
+  section {
+    item ("Open New File","app.open-new-file")
+    item ("Open Recent File", "app.open-recents")
+    item ("Change Visuals", "app.change-visuals")
+  }
+  section{
+    item ("Keyboard Shortcuts")
+  }
+  section{
+    item ("Credits")
+  }
+}
 Window default_window{
   title:"riplay";
   resizable:false;
@@ -12,19 +25,7 @@ Window default_window{
     MenuButton file_options{
       tooltip-text:"file options";
       popover:PopoverMenu{
-        menu-model:menu{
-          section {
-            item ("Open New File","app.open-new-file")
-            item ("Open Recent File", "app.open-recents")
-            item ("Change Visuals", "app.change-visuals")
-          }
-          section{
-            item ("Keyboard Shortcuts")
-          }
-          section{
-            item ("Credits")
-          }
-        };
+        menu-model:top_bar_menu;
       };
     }
   }
