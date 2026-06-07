@@ -17,3 +17,6 @@ meson setup --wipe build && meson compile -C build
 > [!IMPORTANT]
 > taglib v2.1.1 is required.
 > gtk4 is required.
+
+### For devs
+If you want to contribute this please read [this](./docs/DEVNOTES.md).
