@@ -1,4 +1,6 @@
 *.mp3
-build
+_build
 .cache
 .vscode
+.zed
+.clangd
