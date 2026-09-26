@@ -19,10 +19,10 @@ m = meson.get_compiler('cpp').find_library('m', required: false)
 gtk4 = dependency('gtkmm-4.0')
 gnome = import('gnome')
 mpg123_dep = dependency('libmpg123', required: true)
-# gst_dep = dependency('gstreamer-1.0', required: true)
-# gst_base_dep = dependency('gstreamer-base-1.0', required: true)
-# gst_app_dep = dependency('gstreamer-app-1.0', required: true)
-# gst_audio_dep = dependency('gstreamer-audio-1.0', required: true)
+gst_dep = dependency('gstreamer-1.0', required: true)
+gst_base_dep = dependency('gstreamer-base-1.0', required: true)
+gst_app_dep = dependency('gstreamer-app-1.0', required: true)
+gst_audio_dep = dependency('gstreamer-audio-1.0', required: true)
 # libavformat = dependency('libavformat', required: true)
 taglib = dependency('taglib', required: true, static: true)
 # sdl2_dep = dependency('sdl2', required: true)
@@ -34,10 +34,11 @@ subdir('src/views')
 subdir('src/utils')
 subdir('src/metadata')
 subdir('src/logic')
+subdir('src/audio')
 subdir('src/models')
 #
 sources = ['src/main.cpp']
-sources += models_src + view_sources + utils_sources + logic_sources + metadata_source
+sources += models_src + view_sources + utils_sources + logic_sources + metadata_source +audio_sources 
 #view_sources + utils_sources + graphics_sources + metadata_source + logic_sources
 
 # all blueprint files to gen .xml files (ui)
@@ -71,10 +72,10 @@ dependencies = [
   # sdl2_dep,
   mpg123_dep,
   taglib,
-  # gst_dep,
-  # gst_base_dep,
-  # gst_app_dep,
-  # gst_audio_dep,
+  gst_dep,
+  gst_base_dep,
+  gst_app_dep,
+  gst_audio_dep,
   # dependency('libavformat'),
   # dependency('libavcodec'),
   # dependency('libavutil'),

@@ -1,3 +1,4 @@
+#include "audio/audio_manager.h"
 #include "giomm/simpleaction.h"
 #include "glibmm/refptr.h"
 #include "glibmm/ustring.h"
@@ -11,7 +12,14 @@
 AppState::AppState(char **argv, int argc)
     : Gtk::Application("org.riprtx.riplay",
                        Gio::Application::Flags::HANDLES_OPEN),
-      argv(argv), argc(argc) {}
+      argv(argv), argc(argc) {
+  m_audioManager.setEOSCallback([this]() {
+    m_info.state = PlaybackState::STOPPED;
+    notifyListeners();
+  });
+}
+
+void AppState::exit_app(const Glib::VariantBase &parameter) { this->quit(); }
 
 AppState::~AppState() { printf("Clean up and closing ~AppState()...\n"); }
 
@@ -57,14 +65,21 @@ void AppState::load_actions() {
   // Create action for opening recent files
   auto recents_action_obj = Gio::SimpleAction::create("open-recents");
   auto open_new_file_action_obj = Gio::SimpleAction::create("open-new-file");
+  auto toggle_play_action_obj = Gio::SimpleAction::create("toggle-play");
+  auto exit_app_action_obj = Gio::SimpleAction::create("exit-app");
 
   recents_action_obj->signal_activate().connect(
       sigc::mem_fun(*recents, &RecentsInstance::show));
   open_new_file_action_obj->signal_activate().connect(
       sigc::mem_fun(*home, &HomeInstance::open_new_file));
+  toggle_play_action_obj->signal_activate().connect(
+      sigc::mem_fun(m_audioManager, &AudioManager::toggle_play));
+  exit_app_action_obj->signal_activate().connect(
+      sigc::mem_fun(*this, &AppState::exit_app));
 
   add_action(recents_action_obj);
   add_action(open_new_file_action_obj);
+  add_action(toggle_play_action_obj);
   // // Create action for changing visual effects
   // GSimpleAction *visuals_action_obj =
   //     g_simple_action_new("change-visuals", NULL);
@@ -107,6 +122,7 @@ void AppState::open_player(Glib::ustring filepath) {
   recents->close();
   player->close();
   home->close();
+  m_audioManager = AudioManager();
   this->current_song = std::make_shared<SongInstance>(filepath);
   player->show();
 }

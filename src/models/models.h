@@ -1,6 +1,7 @@
 #ifndef MODELS_H
 #define MODELS_H
 
+#include "audio/audio_manager.h"
 #include "glib.h"
 #include "glibmm/refptr.h"
 #include "gtk/gtk.h"
@@ -27,18 +28,67 @@ class PlayerInstance;
 class SongInstance;
 class LyricsManager;
 
+struct PlaybackInfo {
+  PlaybackState state{PlaybackState::STOPPED};
+  int64_t currentPosition{0};
+  int64_t duration{0};
+  std::string currentTrackPath;
+};
+
 // state
 class AppState : public Gtk::Application {
+public:
+  AppState(char **argv, int argc);
+  ~AppState();
+  void exit_app(const Glib::VariantBase &parameter);
+  std::shared_ptr<SongInstance> get_song();
+  void open_player(Glib::ustring filepath);
+
+  void set_current_filename(gchar *);
+  gchar *get_current_filename();
+
+  // Acceso al reproductor de audio
+  AudioManager &audio() { return m_audioManager; }
+
+  // Métodos delegados para acciones de alto nivel
+  void openAndPlay(const std::string &filePath) {
+    if (m_audioManager.loadFile(filePath)) {
+      m_info.currentTrackPath = filePath;
+      m_audioManager.play();
+      notifyListeners();
+    }
+  }
+
+  // Suscripción de vistas (UI Components)
+  using StateListener = std::function<void(const PlaybackInfo &)>;
+  void subscribe(StateListener listener) { m_listeners.push_back(listener); }
+
+  // Método para sincronizar la UI (ej. llamado periódicamente o desde un Timer)
+  void tick() {
+    m_info.state = m_audioManager.getState();
+    m_info.currentPosition = m_audioManager.getPositionSeconds();
+    m_info.duration = m_audioManager.getDurationSeconds();
+    notifyListeners();
+  }
+
 private:
-  GtkWidget *media_controls;
   GtkWidget *lyrics_label;
   GtkMediaStream *media_stream;
-  float *audio_data;
   int data_size;
   char *filename;
   char **argv;
   int argc;
   bool files_were_opened = false;
+
+  const PlaybackInfo &getInfo() const { return m_info; }
+  PlaybackInfo m_info;
+  std::vector<StateListener> m_listeners;
+
+  void notifyListeners() {
+    for (const auto &listener : m_listeners) {
+      listener(m_info);
+    }
+  }
 
   std::shared_ptr<SongInstance> current_song;
 
@@ -49,19 +99,12 @@ private:
   void load_actions();
   void load_views();
 
+  AudioManager m_audioManager;
+
 protected:
   void on_open(const Gio::Application::type_vec_files &files,
                const Glib::ustring &hint) override;
   void on_activate() override;
-
-public:
-  AppState(char **argv, int argc);
-  ~AppState();
-  std::shared_ptr<SongInstance> get_song();
-  void open_player(Glib::ustring filepath);
-
-  void set_current_filename(gchar *);
-  gchar *get_current_filename();
 };
 
 class SongInstance {

@@ -124,8 +124,12 @@ Window player_window{
           }
         }
 
-        MediaControls audio_controls{
-          hexpand:true; 
+        Box media_controls_cont{
+          Button open_file_btn{
+            label:"Play";
+            icon-name:"media-playback-start-symbolic";
+            action-name:"app.toggle-play";
+          }
         }
       }
     }
