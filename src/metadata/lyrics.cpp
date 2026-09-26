@@ -1,49 +1,32 @@
-#include "glib.h"
-#include "glibconfig.h"
+#include "audio/audio_manager.h"
 #include "glibmm/main.h"
-#include "glibmm/refptr.h"
-#include "glibmm/ustring.h"
 #include "gtkmm/label.h"
-#include "gtkmm/mediastream.h"
 #include "metadata/metadata.h"
 #include "sigc++/functors/mem_fun.h"
-#include "tstringlist.h"
 #include "types.h"
 #include <algorithm>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
+#include <cstdint>
 #include <exception>
-#include <gtk/gtk.h>
 #include <iostream>
-#include <ostream>
 #include <regex>
-#include <stdexcept> // Para manejo de errores
+#include <stdexcept>
 #include <string>
-#include <taglib/attachedpictureframe.h>
 #include <taglib/fileref.h>
 #include <taglib/flacfile.h>
-#include <taglib/id3v2frame.h>
-#include <taglib/id3v2header.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/mp4file.h>
 #include <taglib/mpegfile.h>
-#include <taglib/tag.h>
-#include <taglib/tpropertymap.h>
 #include <taglib/unsynchronizedlyricsframe.h>
+#include <taglib/xiphcomment.h>
 #include <variant>
 #include <vector>
-#include <xiphcomment.h>
 
 static std::vector<std::string> f_lrc_props = {"by", "offset"};
 
-gchar *convert_to_utf8(const char *input) {
-  char *utf8_str = g_locale_from_utf8(input, NULL, NULL, NULL, NULL);
-  if (!utf8_str) {
-    utf8_str = g_strdup(input);
-  }
-  return utf8_str;
-}
+namespace {
+const int64_t MICROSECONDS_PER_SECOND = 1000000;
+const unsigned int SYNC_INTERVAL_MS = 240;
+} // namespace
 
 LyricsManager::LyricsManager(std::shared_ptr<SongInstance> song) {
   auto extracted_lyrics_data = extractLyrics(song->get_filepath());
@@ -55,26 +38,56 @@ LyricsManager::LyricsManager(std::shared_ptr<SongInstance> song) {
   }
 }
 
-int LyricsManager::update_lyric() {
-  if (!stream->get_playing()) {
-    if (stream->get_ended() || lyrics_index != 0) {
-      lyrics_index = 0;
-      lyrics_label->set_label(sync_lyrics[lyrics_index].lyric);
+void LyricsManager::setup(AudioManager *audio_manager,
+                          Glib::RefPtr<Gtk::Label> label) {
+  if (!audio_manager || !label) {
+    return;
+  }
+
+  audio = audio_manager;
+  lyrics_label = label;
+
+  is_sync = !sync_lyrics.empty();
+  has_lyrics = !raw_lyrics.empty();
+
+  if (is_sync) {
+    show_lyric(lyrics_index);
+  } else if (has_lyrics) {
+    lyrics_label->set_label(raw_lyrics);
+  }
+}
+
+void LyricsManager::show_lyric(size_t index) {
+  if (!lyrics_label || index >= sync_lyrics.size()) {
+    return;
+  }
+
+  lyrics_index = index;
+  lyrics_label->set_label(sync_lyrics[index].lyric);
+}
+
+bool LyricsManager::update_lyric() {
+  if (!audio || !is_sync || !lyrics_label) {
+    return false;
+  }
+
+  if (audio->getState() != PlaybackState::PLAYING) {
+    if (audio->getState() == PlaybackState::STOPPED) {
+      show_lyric(0);
     }
     return true;
   }
 
-  int64_t current_time = stream->get_timestamp(); // convert to ms
-  // std::cout << "updating lyrics in" << current_time << "ms - index "
-  //           << lyrics_index << std::endl;
+  uint64_t current_time =
+      static_cast<uint64_t>(audio->getPositionSeconds()) *
+      MICROSECONDS_PER_SECOND;
+
   for (size_t i = lyrics_index; i < sync_lyrics.size(); i++) {
-    if (current_time >= sync_lyrics[i].timestamp) {
-      if (i != lyrics_index) {
-        lyrics_index = i;
-        lyrics_label->set_label(sync_lyrics[i].lyric);
-      }
-    } else {
+    if (current_time < sync_lyrics[i].timestamp) {
       break;
+    }
+    if (i != lyrics_index) {
+      show_lyric(i);
     }
   }
 
@@ -87,36 +100,15 @@ void LyricsManager::toggle_update_lyrics(bool is_visible) {
   } else if (is_sync) {
     continue_synced_lyrics();
   }
-};
-
-void LyricsManager::continue_synced_lyrics() {
-  lyric_sync_connection = Glib::signal_timeout().connect(
-      sigc::mem_fun(*this, &LyricsManager::update_lyric),
-      240); // check every 100ms
-
-  // if (!lyric_props.empty()) {
-  //   for (auto x : lyric_props) {
-  //     std::cout << x.field << " : " << x.value << std::endl;
-  //   }
-  // }
 }
 
-void LyricsManager::setup(Glib::RefPtr<Gtk::MediaStream> stream,
-                          Glib::RefPtr<Gtk::Label> label) {
-  if (!stream) {
+void LyricsManager::continue_synced_lyrics() {
+  if (lyric_sync_connection.connected()) {
     return;
   }
 
-  lyrics_label = label;
-  this->stream = stream;
-
-  is_sync = !sync_lyrics.empty();
-  has_lyrics = raw_lyrics.length() > 0;
-  if (is_sync) {
-    lyrics_label->set_label(sync_lyrics[lyrics_index].lyric);
-  } else if (has_lyrics) {
-    lyrics_label->set_label(raw_lyrics);
-  }
+  lyric_sync_connection = Glib::signal_timeout().connect(
+      sigc::mem_fun(*this, &LyricsManager::update_lyric), SYNC_INTERVAL_MS);
 }
 
 void LyricsManager::stop_synced_lyrics() {
@@ -159,11 +151,6 @@ LyricsManager::extractLyrics(std::string filePath) {
           return xiphComment->fieldListMap()["LYRICS"].toString("\n").to8Bit(
               true);
         }
-        // Some files might use different field names
-        else if (xiphComment->contains("LYRICS")) {
-          return xiphComment->fieldListMap()["LYRICS"].toString("\n").to8Bit(
-              true);
-        }
       }
     }
     // handle aac/mp4 files
@@ -198,22 +185,22 @@ format_lyric(const std::string &raw_lyric) {
 
     return LyricBar(
         {(guint64)((mins * 60000 + secs * 1000 + cents * 10) * 1000), lyric});
-  } else {
-    std::regex prop_pattern(R"(^\[(.+):(.+)])");
-    std::smatch prop_matches;
-    if (std::regex_match(raw_lyric, prop_matches, prop_pattern)) {
-      std::string field = prop_matches[1].str();
-      std::string value = prop_matches[2].str();
-      // std::cout << field << ":" << value << std::endl;
-      if (std::find(f_lrc_props.begin(), f_lrc_props.end(), field) !=
-          f_lrc_props.end()) {
-        return LyricProp({field, value});
-      }
-    } else {
-      throw std::invalid_argument(
-          "invalid lyric format, must be '[00:00.00] some lyrics...'");
-    }
   }
+
+  std::regex prop_pattern(R"(^\[(.+):(.+)])");
+  std::smatch prop_matches;
+  if (std::regex_match(raw_lyric, prop_matches, prop_pattern)) {
+    std::string field = prop_matches[1].str();
+    std::string value = prop_matches[2].str();
+    if (std::find(f_lrc_props.begin(), f_lrc_props.end(), field) !=
+        f_lrc_props.end()) {
+      return LyricProp({field, value});
+    }
+  } else {
+    throw std::invalid_argument(
+        "invalid lyric format, must be '[00:00.00] some lyrics...'");
+  }
+
   return "";
 }
 
@@ -237,15 +224,13 @@ std::vector<LyricBar> parser_lyrics(std::string lyrics,
   std::vector<LyricBar> lyrics_formatted({});
 
   auto lines = split_to_array(lyrics);
-  for (auto a : lines) {
+  for (auto line : lines) {
     try {
-      auto res = format_lyric(a);
+      auto res = format_lyric(line);
       if (std::holds_alternative<LyricProp>(res)) {
         lyric_props.push_back(std::get<LyricProp>(res));
       } else if (std::holds_alternative<LyricBar>(res)) {
         lyrics_formatted.push_back(std::get<LyricBar>(res));
-        // std::cout << std::get<LyricBar>(res_l).lyric << " - "
-        //           << std::get<LyricBar>(res_l).timestamp << std::endl;
       }
     } catch (const std::exception &e) {
       std::cerr << "Error: " << e.what() << std::endl;

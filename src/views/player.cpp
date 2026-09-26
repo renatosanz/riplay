@@ -33,8 +33,7 @@ PlayerInstance::PlayerInstance(AppState *state) {
 PlayerInstance::~PlayerInstance() {}
 
 void PlayerInstance::close() {
-  if (win && media_stream) {
-    media_stream->set_playing(false);
+  if (win ) {
     win->close();
     lyrics_manager->stop_synced_lyrics();
     std::cout << "PlayerInstance closed!!\n";
@@ -46,11 +45,7 @@ void PlayerInstance::show() {
   metadata = state->get_song()->get_metadata();
 
   // media_stream & media_controls
-  media_stream =
-      Gtk::MediaFile::create_for_filename(state->get_song()->get_filepath());
-  media_stream->set_playing(true);
-  media_controls = builder->get_object<Gtk::MediaControls>("audio_controls");
-  media_controls->set_media_stream(media_stream);
+  state->audio().loadFile(state->get_song()->get_filepath());
 
   setup_labels(builder);
   setup_albumart(builder);
@@ -97,7 +92,7 @@ void PlayerInstance::setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder) {
 void PlayerInstance::setup_lyrics(RefPtr<Gtk::Builder> builder) {
   lyrics_label = builder->get_object<Gtk::Label>("lyrics_label");
   lyrics_manager = std::make_shared<LyricsManager>(this->state->get_song());
-  lyrics_manager->setup(this->media_stream, this->lyrics_label);
+  lyrics_manager->setup(&state->audio(), this->lyrics_label);
 }
 
 void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {

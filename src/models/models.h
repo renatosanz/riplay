@@ -166,8 +166,6 @@ private:
   Glib::RefPtr<Gtk::Box> metadata_side;
   Glib::RefPtr<Gtk::Label> lyrics_label;
   Glib::RefPtr<Gtk::Picture> albumart_picture;
-  Glib::RefPtr<Gtk::MediaStream> media_stream;
-  Glib::RefPtr<Gtk::MediaControls> media_controls;
 
   std::string artis_label_format;
   std::string properties_format;
