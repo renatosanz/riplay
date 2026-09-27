@@ -1,6 +1,7 @@
 #ifndef MODELS_H
 #define MODELS_H
 
+#include "adwaita.h"
 #include "audio/audio_manager.h"
 #include "glib.h"
 #include "glibmm/refptr.h"

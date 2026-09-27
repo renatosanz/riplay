@@ -1,3 +1,4 @@
+#include "adwaita.h"
 #include "audio/audio_manager.h"
 #include "giomm/simpleaction.h"
 #include "glibmm/refptr.h"

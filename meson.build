@@ -24,6 +24,7 @@ gst_base_dep = dependency('gstreamer-base-1.0', required: true)
 gst_app_dep = dependency('gstreamer-app-1.0', required: true)
 gst_audio_dep = dependency('gstreamer-audio-1.0', required: true)
 # libavformat = dependency('libavformat', required: true)
+libadwaita = dependency('libadwaita-1')
 taglib = dependency('taglib', required: true, static: true)
 # sdl2_dep = dependency('sdl2', required: true)
 
@@ -76,6 +77,7 @@ dependencies = [
   gst_base_dep,
   gst_app_dep,
   gst_audio_dep,
+  libadwaita,
   # dependency('libavformat'),
   # dependency('libavcodec'),
   # dependency('libavutil'),
