@@ -1,22 +1,45 @@
 #include "player.h"
 #include "gdkmm/pixbufloader.h"
 #include "gdkmm/texture.h"
+#include "glibmm/main.h"
 #include "glibmm/ustring.h"
+#include "gtkmm/adjustment.h"
 #include "gtkmm/button.h"
 #include "gtkmm/label.h"
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediafile.h"
 #include "gtkmm/picture.h"
+#include "gtkmm/scale.h"
 #include "metadata/metadata.h"
 #include "models/models.h"
 #include "pangomm/layout.h"
+#include "sigc++/functors/mem_fun.h"
 #include "types.h"
 #include "utils.h"
 #include <iostream>
 #include <memory>
 #define PLAYER_UI_PATH "/org/riplay/data/ui/player.ui"
 
+static const int SEEK_TICK_MS = 200;
+static const int SEEK_STEP_SECS = 5;
+static const int SEEK_PAGE_SECS = 30;
+static const int SEEK_HOLD_MS = 250;
+
 using Glib::RefPtr;
+
+namespace {
+Glib::ustring format_time(int64_t seconds) {
+  if (seconds < 0) {
+    seconds = 0;
+  }
+  int64_t hours = seconds / 3600;
+  int64_t minutes = (seconds % 3600) / 60;
+  if (hours > 0) {
+    return Glib::ustring::sprintf("%d:%02d:%02d", hours, minutes, seconds % 60);
+  }
+  return Glib::ustring::sprintf("%d:%02d", minutes, seconds % 60);
+}
+} // namespace
 
 PlayerInstance::PlayerInstance(AppState *state) {
   this->state = state;
@@ -30,10 +53,11 @@ PlayerInstance::PlayerInstance(AppState *state) {
   return;
 }
 
-PlayerInstance::~PlayerInstance() {}
+PlayerInstance::~PlayerInstance() { stop_seek_timer(); }
 
 void PlayerInstance::close() {
   if (win) {
+    stop_seek_timer();
     win->close();
     if (lyrics_manager) {
       lyrics_manager->stop_synced_lyrics();
@@ -62,6 +86,7 @@ void PlayerInstance::show() {
   setup_button_actions(builder);
   setup_metadata_side(builder);
   setup_lyrics(builder);
+  setup_seek_bar(builder);
   // ui stuff
   win = builder->get_object<Gtk::Window>("player_window");
   win->signal_close_request().connect(
@@ -103,6 +128,88 @@ void PlayerInstance::setup_lyrics(RefPtr<Gtk::Builder> builder) {
   lyrics_label = builder->get_object<Gtk::Label>("lyrics_label");
   lyrics_manager = std::make_shared<LyricsManager>(this->state->get_song());
   lyrics_manager->setup(&state->audio(), this->lyrics_label);
+}
+
+void PlayerInstance::setup_seek_bar(RefPtr<Gtk::Builder> builder) {
+  stop_seek_timer();
+  pending_seek = -1.0;
+  scrub_hold_until = 0;
+
+  elapsed_label = builder->get_object<Gtk::Label>("elapsed_label");
+  seek_bar = builder->get_object<Gtk::Scale>("seek_bar");
+  duration_label = builder->get_object<Gtk::Label>("duration_label");
+
+  if (!seek_bar) {
+    g_printerr("Player ui has no seek_bar\n");
+    return;
+  }
+
+  seek_bar->set_draw_value(false);
+  seek_bar->set_digits(0);
+  seek_bar->set_increments(SEEK_STEP_SECS, SEEK_PAGE_SECS);
+  seek_bar->set_range(0, 1);
+
+  // Un drag emite decenas de value-changed. Solo se recuerda el destino y el
+  // tick es quien busca, para no lanzar un seek por cada pixel de recorrido.
+  seek_bar->signal_value_changed().connect([this]() {
+    if (updating_seek_bar) {
+      return;
+    }
+    pending_seek = seek_bar->get_value();
+  });
+
+  seek_timeout_id = Glib::signal_timeout().connect(
+      sigc::mem_fun(*this, &PlayerInstance::on_seek_timeout), SEEK_TICK_MS);
+}
+
+void PlayerInstance::stop_seek_timer() {
+  if (seek_timeout_id.connected()) {
+    seek_timeout_id.disconnect();
+  }
+}
+
+bool PlayerInstance::on_seek_timeout() {
+  if (!seek_bar) {
+    return TRUE;
+  }
+  AudioManager &audio = state->audio();
+
+  if (pending_seek >= 0.0) {
+    audio.seek(static_cast<int64_t>(pending_seek));
+    pending_seek = -1.0;
+    scrub_hold_until = g_get_monotonic_time() / 1000 + SEEK_HOLD_MS;
+    lyrics_manager->show_lyric(0);
+  }
+
+  int64_t position = audio.getPositionSeconds();
+  int64_t duration = audio.getDurationSeconds();
+  update_seek_labels(position, duration);
+
+  // Tras un seek la posicion consultada puede seguir siendo la anterior: no
+  // pisar el valor que el usuario acaba de dejar.
+  if (g_get_monotonic_time() / 1000 < scrub_hold_until) {
+    return TRUE;
+  }
+
+  auto adjustment = seek_bar->get_adjustment();
+  if (adjustment) {
+    updating_seek_bar = true;
+    if (duration > 0 && adjustment->get_upper() != static_cast<double>(duration)) {
+      adjustment->set_upper(duration);
+    }
+    seek_bar->set_value(static_cast<double>(position));
+    updating_seek_bar = false;
+  }
+  return TRUE;
+}
+
+void PlayerInstance::update_seek_labels(int64_t position, int64_t duration) {
+  if (elapsed_label) {
+    elapsed_label->set_text(format_time(position));
+  }
+  if (duration_label) {
+    duration_label->set_text(format_time(duration));
+  }
 }
 
 void PlayerInstance::setup_button_actions(Glib::RefPtr<Gtk::Builder> builder) {

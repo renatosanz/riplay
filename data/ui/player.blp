@@ -131,6 +131,40 @@ Window player_window{
             icon-name:"media-playback-start-symbolic";
             action-name:"app.toggle-play";
           }
+          Box seek_bar_cont{
+            margin-bottom:8;
+            spacing:8;
+            hexpand:true;
+
+            Label elapsed_label{
+              label:"0:00";
+              css-classes:["dim-label"];
+              xalign:1;
+              width-request:44;
+            }
+
+            Scale seek_bar{
+              hexpand:true;
+              valign:center;
+              draw-value:false;
+              digits:0;
+              tooltip-text:"Seek";
+              adjustment:Adjustment {
+                lower:0;
+                upper:1;
+                step-increment:5;
+                page-increment:30;
+                value:0;
+              };
+            }
+
+            Label duration_label{
+              label:"0:00";
+              css-classes:["dim-label"];
+              xalign:0;
+              width-request:44;
+            }
+          }
         }
       }
     }

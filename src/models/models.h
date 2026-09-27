@@ -14,6 +14,7 @@
 #include "gtkmm/mediacontrols.h"
 #include "gtkmm/mediastream.h"
 #include "gtkmm/picture.h"
+#include "gtkmm/scale.h"
 #include "gtkmm/widget.h"
 #include "gtkmm/window.h"
 #include "types.h"
@@ -174,6 +175,14 @@ private:
   Glib::RefPtr<Gtk::Box> metadata_side;
   Glib::RefPtr<Gtk::Label> lyrics_label;
   Glib::RefPtr<Gtk::Picture> albumart_picture;
+  Glib::RefPtr<Gtk::Scale> seek_bar;
+  Glib::RefPtr<Gtk::Label> elapsed_label;
+  Glib::RefPtr<Gtk::Label> duration_label;
+
+  sigc::connection seek_timeout_id;
+  double pending_seek{-1.0};
+  bool updating_seek_bar = false;
+  gint64 scrub_hold_until = 0;
 
   std::string artis_label_format;
   std::string properties_format;
@@ -190,6 +199,10 @@ private:
   void setup_albumart(Glib::RefPtr<Gtk::Builder> builder);
   void setup_lyrics(Glib::RefPtr<Gtk::Builder> builder);
   void setup_metadata_side(Glib::RefPtr<Gtk::Builder> builder);
+  void setup_seek_bar(Glib::RefPtr<Gtk::Builder> builder);
+  void stop_seek_timer();
+  bool on_seek_timeout();
+  void update_seek_labels(int64_t position, int64_t duration);
 
   std::shared_ptr<LyricsManager> lyrics_manager;
 
