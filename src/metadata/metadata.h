@@ -27,9 +27,9 @@ private:
   sigc::connection lyric_sync_connection;
   std::atomic<size_t> lyrics_index = 0;
 
-  void show_lyric(size_t index);
 
 public:
+  void show_lyric(size_t index);
   explicit LyricsManager(std::shared_ptr<SongInstance> song);
   ~LyricsManager() { stop_synced_lyrics(); }
   std::variant<bool, std::string> extractLyrics(std::string filePath);
