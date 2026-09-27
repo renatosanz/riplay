@@ -23,6 +23,8 @@ void AudioManager::cleanupPipeline() {
   m_currentState = PlaybackState::STOPPED;
 }
 
+void AudioManager::reset() { cleanupPipeline(); }
+
 bool AudioManager::loadFile(const std::string &filePath) {
   cleanupPipeline();
 
@@ -64,6 +66,11 @@ bool AudioManager::loadFile(const std::string &filePath) {
 }
 
 void AudioManager::toggle_play(const Glib::VariantBase &parameter) {
+  if (!m_pipeline) {
+    g_print("No file loaded, nothing to toggle\n");
+    return;
+  }
+
   GstState current_state;
   GstState pending_state;
   GstStateChangeReturn ret =

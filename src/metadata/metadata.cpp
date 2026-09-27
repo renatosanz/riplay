@@ -1,14 +1,21 @@
 #include "metadata.h"
 #include "types.h"
-#include <cstring>
 #include <glib.h>
 #include <memory>
+#include <string>
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/mpegfile.h>
 #include <taglib/tag.h>
 #include <taglib/tpropertymap.h>
+
+namespace {
+void copy_tag(const TagLib::String &value, char *dest, size_t size) {
+  const std::string utf8 = value.to8Bit(true);
+  g_strlcpy(dest, utf8.c_str(), size);
+}
+} // namespace
 
 std::shared_ptr<FileMetadata> extract_metadata_from_path(std::string filename) {
   // Use TagLib's C++ API directly
@@ -20,35 +27,27 @@ std::shared_ptr<FileMetadata> extract_metadata_from_path(std::string filename) {
   }
 
   auto metadata = std::make_shared<FileMetadata>();
+  metadata->properties = new AudioProps{};
 
   // Get the tag information
   TagLib::Tag *tag = file.tag();
   if (tag) {
-    strncpy(metadata->title, tag->title().toCString(true),
-            sizeof(metadata->title) - 1);
-    strncpy(metadata->artist, tag->artist().toCString(true),
-            sizeof(metadata->artist) - 1);
-    strncpy(metadata->album, tag->album().toCString(true),
-            sizeof(metadata->album) - 1);
+    copy_tag(tag->title(), metadata->title, sizeof(metadata->title));
+    copy_tag(tag->artist(), metadata->artist, sizeof(metadata->artist));
+    copy_tag(tag->album(), metadata->album, sizeof(metadata->album));
+    copy_tag(tag->genre(), metadata->genre, sizeof(metadata->genre));
     metadata->year = tag->year();
     metadata->track = tag->track();
-    strncpy(metadata->genre, tag->genre().toCString(true),
-            sizeof(metadata->genre) - 1);
   }
 
   // Get audio properties
   if (file.audioProperties()) {
     const TagLib::AudioProperties *props = file.audioProperties();
-    metadata->properties = g_new0(AudioProps, 1);
-    if (metadata->properties) {
-      metadata->properties->length = props->length();
-      metadata->properties->bitrate = props->bitrate();
-      metadata->properties->samplerate = props->sampleRate();
-      metadata->properties->channels = props->channels();
-    }
+    metadata->properties->length = props->length();
+    metadata->properties->bitrate = props->bitrate();
+    metadata->properties->samplerate = props->sampleRate();
+    metadata->properties->channels = props->channels();
   }
-
-  g_print("title: %s\n", metadata->title);
 
   metadata->raw_albumart =
       extractAlbumArt(filename.c_str(), &metadata->raw_albumart_size);

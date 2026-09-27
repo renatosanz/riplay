@@ -60,6 +60,10 @@ void AppState::on_activate() {
 }
 
 void AppState::load_views() {
+  if (views_loaded) {
+    return;
+  }
+  views_loaded = true;
   printf("Loading view load_views()...\n");
   home = std::make_unique<HomeInstance>(this);
   recents = std::make_unique<RecentsInstance>(this);
@@ -69,6 +73,10 @@ void AppState::load_views() {
 std::shared_ptr<SongInstance> AppState::get_song() { return current_song; };
 
 void AppState::load_actions() {
+  if (actions_loaded) {
+    return;
+  }
+  actions_loaded = true;
   printf("Loading actions load_actions()...\n");
   // Create action for opening recent files
   auto recents_action_obj = Gio::SimpleAction::create("open-recents");
@@ -136,11 +144,19 @@ void AppState::load_actions() {
 }
 
 void AppState::open_player(Glib::ustring filepath) {
+  auto song = std::make_shared<SongInstance>(filepath);
+  if (!song->get_metadata()) {
+    g_printerr("Skipping %s: no readable tags\n", filepath.c_str());
+    recents->close();
+    home->show();
+    return;
+  }
+
   recents->close();
   player->close();
   home->close();
-  m_audioManager = AudioManager();
-  this->current_song = std::make_shared<SongInstance>(filepath);
+  m_audioManager.reset();
+  this->current_song = song;
   player->show();
 }
 

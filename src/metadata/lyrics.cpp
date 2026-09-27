@@ -25,7 +25,7 @@ static std::vector<std::string> f_lrc_props = {"by", "offset"};
 
 namespace {
 const int64_t MICROSECONDS_PER_SECOND = 1000000;
-const unsigned int SYNC_INTERVAL_MS = 240;
+const unsigned int SYNC_INTERVAL_MS = 100;
 } // namespace
 
 LyricsManager::LyricsManager(std::shared_ptr<SongInstance> song) {

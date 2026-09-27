@@ -98,6 +98,8 @@ private:
 
   void load_actions();
   void load_views();
+  bool views_loaded = false;
+  bool actions_loaded = false;
 
   Glib::RefPtr<Gtk::Window> keymaps_win;
   void show_keymaps_win(const Glib::VariantBase &parameter);
@@ -133,7 +135,7 @@ private:
   Glib::RefPtr<Gtk::DrawingArea> drawing_area;
   Glib::RefPtr<Gtk::FileDialog> open_new_file_dialog;
   sigc::connection timeout_id;
-  int position;
+  int position = 0;
 
   void draw_stand_by_function(const std::shared_ptr<Cairo::Context> &cr,
                               int width, int height);

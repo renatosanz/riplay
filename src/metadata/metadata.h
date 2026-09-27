@@ -31,6 +31,7 @@ private:
 
 public:
   explicit LyricsManager(std::shared_ptr<SongInstance> song);
+  ~LyricsManager() { stop_synced_lyrics(); }
   std::variant<bool, std::string> extractLyrics(std::string filePath);
   bool update_lyric();
   void setup(AudioManager *audio_manager, Glib::RefPtr<Gtk::Label> label);

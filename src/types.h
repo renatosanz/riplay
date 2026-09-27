@@ -16,7 +16,7 @@ typedef struct {
   int bitrate;
 } AudioProps;
 
-typedef struct {
+struct FileMetadata {
   char title[MAX_TEXT_DATA];
   char artist[MAX_TEXT_DATA];
   char album[MAX_TEXT_DATA];
@@ -26,7 +26,26 @@ typedef struct {
   AudioProps *properties;
   unsigned char *raw_albumart;
   unsigned long raw_albumart_size;
-} FileMetadata;
+
+  FileMetadata()
+      : year(0), track(0), properties(nullptr), raw_albumart(nullptr),
+        raw_albumart_size(0) {
+    title[0] = '\0';
+    artist[0] = '\0';
+    album[0] = '\0';
+    genre[0] = '\0';
+  }
+
+  ~FileMetadata() {
+    delete properties;
+    properties = nullptr;
+    delete[] raw_albumart;
+    raw_albumart = nullptr;
+  }
+
+  FileMetadata(const FileMetadata &) = delete;
+  FileMetadata &operator=(const FileMetadata &) = delete;
+};
 
 typedef struct {
   guint64 timestamp;

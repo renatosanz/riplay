@@ -33,9 +33,11 @@ PlayerInstance::PlayerInstance(AppState *state) {
 PlayerInstance::~PlayerInstance() {}
 
 void PlayerInstance::close() {
-  if (win ) {
+  if (win) {
     win->close();
-    lyrics_manager->stop_synced_lyrics();
+    if (lyrics_manager) {
+      lyrics_manager->stop_synced_lyrics();
+    }
     std::cout << "PlayerInstance closed!!\n";
   }
 }
@@ -47,6 +49,10 @@ Glib::RefPtr<Gtk::Window> PlayerInstance::window(){
 void PlayerInstance::show() {
   auto builder = load_builder(PLAYER_UI_PATH);
   metadata = state->get_song()->get_metadata();
+  if (!metadata) {
+    g_printerr("Cannot show player, song has no metadata\n");
+    return;
+  }
 
   // media_stream & media_controls
   state->audio().loadFile(state->get_song()->get_filepath());

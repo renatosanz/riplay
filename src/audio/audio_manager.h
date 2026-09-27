@@ -12,6 +12,11 @@ public:
   AudioManager();
   ~AudioManager();
 
+  AudioManager(const AudioManager &) = delete;
+  AudioManager &operator=(const AudioManager &) = delete;
+  AudioManager(AudioManager &&) = delete;
+  AudioManager &operator=(AudioManager &&) = delete;
+
   // Métodos principales de control para la UI
   bool loadFile(const std::string &filePath);
   void toggle_play(const Glib::VariantBase &parameter);
@@ -19,6 +24,9 @@ public:
   void pause();
   void stop();
   bool seek(int64_t seconds);
+
+  // Libera el pipeline actual sin destruir el gestor, para reutilizarlo
+  void reset();
 
   // Obtención de información para sliders o etiquetas de tiempo
   int64_t getPositionSeconds() const;

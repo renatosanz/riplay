@@ -16,6 +16,7 @@
 #include <xiphcomment.h>
 
 unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {
+  *size = 0;
   TagLib::FileRef file(filePath);
 
   if (!file.isNull() && file.tag()) {
@@ -30,7 +31,7 @@ unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {
               static_cast<TagLib::ID3v2::AttachedPictureFrame *>(
                   frames.front());
           *size = picFrame->picture().size();
-          unsigned char *data = (unsigned char *)malloc(*size);
+          unsigned char *data = new unsigned char[*size];
           memcpy(data, picFrame->picture().data(), *size);
           return data;
         }
@@ -43,7 +44,7 @@ unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {
           flacFile->pictureList();
       if (!pictures.isEmpty()) {
         *size = pictures[0]->data().size();
-        unsigned char *data = (unsigned char *)malloc(*size);
+        unsigned char *data = new unsigned char[*size];
         memcpy(data, pictures[0]->data().data(), *size);
         return data;
       }
@@ -58,7 +59,7 @@ unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {
           TagLib::MP4::CoverArtList coverArtList = coverItem.toCoverArtList();
           if (!coverArtList.isEmpty()) {
             *size = coverArtList[0].data().size();
-            unsigned char *data = (unsigned char *)malloc(*size);
+            unsigned char *data = new unsigned char[*size];
             memcpy(data, coverArtList[0].data().data(), *size);
             return data;
           }
@@ -66,5 +67,5 @@ unsigned char *extractAlbumArt(const char *filePath, unsigned long *size) {
       }
     }
   }
-  return 0;
+  return nullptr;
 }

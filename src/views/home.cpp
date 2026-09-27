@@ -117,7 +117,14 @@ void HomeInstance::open_new_file(const Glib::VariantBase &parameter) {
 
 void HomeInstance::file_dialog_response(
     Glib::RefPtr<Gio::AsyncResult> &result) {
-  Glib::RefPtr<Gio::File> file = open_new_file_dialog->open_finish(result);
+  Glib::RefPtr<Gio::File> file;
+  try {
+    file = open_new_file_dialog->open_finish(result);
+  } catch (const Glib::Error &error) {
+    g_print("No file selected: %s\n", error.what());
+    return;
+  }
+
   if (!file) {
     g_print("No file selected\n");
     return;
