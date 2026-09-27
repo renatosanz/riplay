@@ -94,6 +94,7 @@ void AppState::load_actions() {
   add_action(recents_action_obj);
   add_action(open_new_file_action_obj);
   add_action(toggle_play_action_obj);
+  add_action(exit_app_action_obj);
   add_action(open_keymaps_action_obj);
   add_action(open_credits_action_obj);
   // // Create action for changing visual effects
