@@ -2,7 +2,7 @@ project(
   'riplay',
   'cpp',
   meson_version: '>= 1.3.0',
-  version: '1.0',
+  version: '0.1',
   license: 'GPL-3.0-or-later',
   default_options: [
     'warning_level=2',
