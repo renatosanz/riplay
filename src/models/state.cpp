@@ -14,6 +14,11 @@ AppState::AppState(char **argv, int argc)
     : Gtk::Application("org.riprtx.riplay",
                        Gio::Application::Flags::HANDLES_OPEN),
       argv(argv), argc(argc) {
+  // add custom icon
+  GdkDisplay *display = gdk_display_get_default();
+  GtkIconTheme *icon_theme = gtk_icon_theme_get_for_display(display);
+  gtk_icon_theme_add_resource_path(icon_theme, "/org/riplay/data/img");
+
   m_audioManager.setEOSCallback([this]() {
     m_info.state = PlaybackState::STOPPED;
     notifyListeners();
