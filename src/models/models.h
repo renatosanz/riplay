@@ -74,7 +74,6 @@ public:
 
 private:
   GtkWidget *lyrics_label;
-  GtkMediaStream *media_stream;
   int data_size;
   char *filename;
   char **argv;
@@ -147,6 +146,7 @@ public:
   ~HomeInstance();
   void show();
   void close();
+  Glib::RefPtr<Gtk::Window> window();
   void open_new_file(const Glib::VariantBase &parameter);
 };
 
@@ -198,7 +198,7 @@ public:
   void load_song();
   void close();
   bool lauch_by_action();
+  Glib::RefPtr<Gtk::Window> window();
 };
-
 #define MODELS_H
 #endif // !MODELS_H

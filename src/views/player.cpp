@@ -40,6 +40,10 @@ void PlayerInstance::close() {
   }
 }
 
+Glib::RefPtr<Gtk::Window> PlayerInstance::window(){
+  return win;
+}
+
 void PlayerInstance::show() {
   auto builder = load_builder(PLAYER_UI_PATH);
   metadata = state->get_song()->get_metadata();

@@ -40,6 +40,10 @@ void HomeInstance::show() {
   win->show();
 }
 
+Glib::RefPtr<Gtk::Window> HomeInstance::window(){
+  return win;
+}
+
 void HomeInstance::close() {
   if (win) {
     win->close();
