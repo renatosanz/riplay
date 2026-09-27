@@ -4,4 +4,5 @@ _build
 .vscode
 .zed
 .clangd
+builddir
 compile_commands.json
