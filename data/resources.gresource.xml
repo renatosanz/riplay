@@ -7,6 +7,8 @@
     <file preprocess="xml-stripblanks">data/ui/recents.ui</file>
     <file preprocess="xml-stripblanks">data/ui/visuals_menu.ui</file>
     <file preprocess="xml-stripblanks">data/ui/equalizer.ui</file>
+    <file preprocess="xml-stripblanks">data/ui/keymaps.ui</file>
+    <file preprocess="xml-stripblanks">data/ui/credits.ui</file>
     <file >data/img/img.jpg</file>
     <file preprocess="xml-stripblanks">data/img/icon.svg</file>
     <!-- <file preprocess="xml-stripblanks">ui/preferences.ui</file> -->

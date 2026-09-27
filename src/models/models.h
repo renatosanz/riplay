@@ -100,6 +100,11 @@ private:
   void load_actions();
   void load_views();
 
+  Glib::RefPtr<Gtk::Window> keymaps_win;
+  void show_keymaps_win(const Glib::VariantBase &parameter);
+
+  void show_credits_win(const Glib::VariantBase &parameter);
+
   AudioManager m_audioManager;
 
 protected:

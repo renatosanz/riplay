@@ -1,12 +1,14 @@
 #include "adwaita.h"
 #include "audio/audio_manager.h"
 #include "giomm/simpleaction.h"
-#include "glibmm/refptr.h"
+#include "glib.h"
 #include "glibmm/ustring.h"
+#include "gtk/gtk.h"
 #include "gtkmm/application.h"
+#include "gtkmm/window.h"
 #include "models/models.h"
 #include "sigc++/functors/mem_fun.h"
-#include "types.h"
+#include "utils.h"
 #include <iostream>
 #include <memory>
 
@@ -73,6 +75,8 @@ void AppState::load_actions() {
   auto open_new_file_action_obj = Gio::SimpleAction::create("open-new-file");
   auto toggle_play_action_obj = Gio::SimpleAction::create("toggle-play");
   auto exit_app_action_obj = Gio::SimpleAction::create("exit-app");
+  auto open_keymaps_action_obj = Gio::SimpleAction::create("open-keymaps");
+  auto open_credits_action_obj = Gio::SimpleAction::create("open-credits");
 
   recents_action_obj->signal_activate().connect(
       sigc::mem_fun(*recents, &RecentsInstance::show));
@@ -82,10 +86,16 @@ void AppState::load_actions() {
       sigc::mem_fun(m_audioManager, &AudioManager::toggle_play));
   exit_app_action_obj->signal_activate().connect(
       sigc::mem_fun(*this, &AppState::exit_app));
+  open_keymaps_action_obj->signal_activate().connect(
+      sigc::mem_fun(*this, &AppState::show_keymaps_win));
+  open_credits_action_obj->signal_activate().connect(
+      sigc::mem_fun(*this, &AppState::show_credits_win));
 
   add_action(recents_action_obj);
   add_action(open_new_file_action_obj);
   add_action(toggle_play_action_obj);
+  add_action(open_keymaps_action_obj);
+  add_action(open_credits_action_obj);
   // // Create action for changing visual effects
   // GSimpleAction *visuals_action_obj =
   //     g_simple_action_new("change-visuals", NULL);
@@ -135,3 +145,26 @@ void AppState::open_player(Glib::ustring filepath) {
 
 void AppState::set_current_filename(gchar *f) { filename = f; }
 gchar *AppState::get_current_filename() { return filename; }
+
+
+void AppState::show_keymaps_win(const Glib::VariantBase &parameter) {
+  auto builder = load_builder("/org/riplay/data/ui/keymaps.ui");
+  keymaps_win = builder->get_object<Gtk::Window>("keymaps_win");
+  add_window(*keymaps_win);
+  keymaps_win->show();
+}
+
+void AppState::show_credits_win(const Glib::VariantBase &parameter) {
+  const char *developers[] = {"Renato Sanchez", NULL};
+
+  const char *designers[] = {"Renato Sanchez", NULL};
+
+  adw_show_about_dialog(
+      GTK_WIDGET(gtk_application_get_active_window(this->gobj())),
+      "application-name", "Riplay", "application-icon", "icon.svg", "version",
+      "0.1", "copyright", "© 2026 Renato Sanchez", "issue-url",
+      "https://github.com/renatosanz/riplay/issues", "license-type",
+      GTK_LICENSE_GPL_3_0, "developers", developers, "designers", designers,
+      "translator-credits", "translator-credits", "website",
+      "https://github.com/renatosanz/riplay", NULL);
+}
